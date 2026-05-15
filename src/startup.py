@@ -111,16 +111,16 @@ class Startup:
         team_size = min(team_size, max_team_size)
 
         if ai_team_optimization:
-            effective_layer3_cost_factor = 1.0 - (
+            effective_layer4_cost_factor = 1.0 - (
                 layer4_substitutability * self.ai_substitution_potential_layer4
             )
         else:
-            effective_layer3_cost_factor = 1.0
+            effective_layer4_cost_factor = 1.0
 
         layer4_share = prev.layer4_share
-        non_layer3_share = 1.0 - layer4_share
+        non_layer4_share = 1.0 - layer4_share
         effective_team_cost = team_size * self.monthly_burn_per_engineer_usd * (
-            layer4_share * effective_layer3_cost_factor + non_layer3_share
+            layer4_share * effective_layer4_cost_factor + non_layer4_share
         )
 
         # Revenue dynamics - realistic SaaS ramp
@@ -157,9 +157,9 @@ class Startup:
         is_alive = cash > 0
 
         notes = ""
-        if ai_team_optimization and effective_layer3_cost_factor < 0.95:
+        if ai_team_optimization and effective_layer4_cost_factor < 0.95:
             notes = (f"AI optimization: layer-4 cost factor "
-                     f"{effective_layer3_cost_factor:.2f}")
+                     f"{effective_layer4_cost_factor:.2f}")
 
         return StartupState(
             month=prev.month + 1,
@@ -177,7 +177,7 @@ class Startup:
         self,
         n_months: int,
         market_size_usd: float,
-        layer3_substitutability_trajectory: List[float],
+        layer4_substitutability_trajectory: List[float],
         funding_events: Optional[Dict[int, float]] = None,
         rng: Optional[np.random.Generator] = None,
         ai_team_optimization: bool = True,
@@ -185,8 +185,8 @@ class Startup:
         funding_events = funding_events or {}
         states = [self.initial_state()]
         for m in range(1, n_months + 1):
-            sub_idx = min(m, len(layer3_substitutability_trajectory) - 1)
-            sub = layer3_substitutability_trajectory[sub_idx]
+            sub_idx = min(m, len(layer4_substitutability_trajectory) - 1)
+            sub = layer4_substitutability_trajectory[sub_idx]
             funding = funding_events.get(m, 0.0)
             new_state = self.step(
                 prev=states[-1],

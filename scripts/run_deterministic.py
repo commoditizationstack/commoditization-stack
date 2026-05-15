@@ -137,18 +137,18 @@ def figure_2_substitutability_trajectories(config, outdir):
 
 def figure_3_inverted_keyperson_heatmap(config, outdir):
     """Heatmap: discount sign as a function of layer-4 share x AI substitution."""
-    layer3_shares = np.linspace(0.20, 0.90, 36)
+    layer4_shares = np.linspace(0.20, 0.90, 36)
     ai_potentials = np.linspace(0.05, 0.95, 36)
     threshold = float(config["valuation"]["damodaran_inverted_threshold_layer4_share"])
     classical_rate = float(config["valuation"]["damodaran_key_person_discount_classical"])
     max_premium = float(config["valuation"]["damodaran_inverted_max_premium"])
 
-    Z = np.zeros((len(ai_potentials), len(layer3_shares)))
+    Z = np.zeros((len(ai_potentials), len(layer4_shares)))
     for i, ai in enumerate(ai_potentials):
-        for j, l3 in enumerate(layer3_shares):
+        for j, l4 in enumerate(layer4_shares):
             _, comp = damodaran_inverted_discount(
                 enterprise_value_usd=100_000_000,
-                team_layer4_share=l3,
+                team_layer4_share=l4,
                 ai_substitution_potential_layer4=ai,
                 threshold_layer4_share=threshold,
                 classical_discount_rate=classical_rate,
@@ -158,10 +158,10 @@ def figure_3_inverted_keyperson_heatmap(config, outdir):
 
     fig, ax = plt.subplots(figsize=(8, 6))
     im = ax.imshow(Z, aspect="auto", origin="lower",
-                   extent=(layer3_shares.min(), layer3_shares.max(),
+                   extent=(layer4_shares.min(), layer4_shares.max(),
                            ai_potentials.min(), ai_potentials.max()),
                    cmap="RdBu_r", vmin=-15, vmax=20)
-    ax.contour(layer3_shares, ai_potentials, Z, levels=[0],
+    ax.contour(layer4_shares, ai_potentials, Z, levels=[0],
                colors="black", linewidths=2, linestyles="--")
     ax.axvline(threshold, color="white", linewidth=1, linestyle=":", alpha=0.7)
     ax.text(threshold + 0.005, 0.92, f"  threshold = {threshold:.2f}",
@@ -335,7 +335,7 @@ def main():
             "months_run": result.months_run,
             "final_arr_usd": result.final_arr_usd,
             "final_team_size": result.final_team_size,
-            "final_layer3_substitutability": result.final_layer3_substitutability,
+            "final_layer4_substitutability": result.final_layer4_substitutability,
             **{f"val_{k}": v for k, v in result.valuations_at_exit.items()},
         })
     pd.DataFrame(rows).to_csv(PROJECT_ROOT / "outputs" / "tables"

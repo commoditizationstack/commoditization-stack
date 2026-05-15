@@ -54,7 +54,7 @@ class SimulationResult:
     final_team_size: float
     final_cash_usd: float
     final_trl: float
-    final_layer3_substitutability: float
+    final_layer4_substitutability: float
     valuations_at_exit: Dict[str, float] = field(default_factory=dict)
     history: List[Dict] = field(default_factory=list)
     notes: str = ""
@@ -66,10 +66,10 @@ def build_substitutability_trajectory(
     rng: Optional[np.random.Generator] = None,
 ) -> List[float]:
     """Build a trajectory of layer-4 substitutability over n_months."""
-    layer3 = stack["layer_4_codified_synthesis"]
+    layer4 = stack["layer_4_codified_synthesis"]
     months = np.arange(n_months + 1)
     years = months / 12.0
-    trajectory = [layer3.substitutability_at(y) for y in years]
+    trajectory = [layer4.substitutability_at(y) for y in years]
     return trajectory
 
 
@@ -120,7 +120,7 @@ def run_single_simulation(
     states = startup.run(
         n_months=n_months,
         market_size_usd=2_000_000_000,
-        layer3_substitutability_trajectory=sub_trajectory,
+        layer4_substitutability_trajectory=sub_trajectory,
         funding_events=funding_events,
         rng=rng,
     )
@@ -153,7 +153,7 @@ def run_single_simulation(
         final_team_size=final.team_size,
         final_cash_usd=final.cash_usd,
         final_trl=final.trl,
-        final_layer3_substitutability=sub_trajectory[
+        final_layer4_substitutability=sub_trajectory[
             min(final.month, len(sub_trajectory) - 1)],
         valuations_at_exit=valuations,
         history=history_dicts,
@@ -186,7 +186,7 @@ def run_monte_carlo(
             "final_team_size": result.final_team_size,
             "final_cash_usd": result.final_cash_usd,
             "final_trl": result.final_trl,
-            "final_layer3_substitutability": result.final_layer3_substitutability,
+            "final_layer4_substitutability": result.final_layer4_substitutability,
         }
         for method, val in result.valuations_at_exit.items():
             row[f"valuation_{method}"] = val
