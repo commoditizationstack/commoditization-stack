@@ -1,0 +1,33 @@
+scenario_name: "future_2030_extrapolation"
+description: >
+  Extrapolation: AI substitutability extends meaningfully into layer 5
+  (hypothesis formulation). Hypothetical scenario for sensitivity analysis only.
+
+inherits: "parameters.yaml"
+
+stack_layers:
+  layer_4_codified_synthesis:
+    name: "Codified retrieval, synthesis, prototyping"
+    velocity: 0.30
+    substitutability_2026: 0.92
+  layer_5_hypothesis:
+    name: "Hypothesis formulation and judgment"
+    velocity: 0.15
+    substitutability_2026: 0.45
+
+startup:
+  sector: "saas_b2b_logistics_2030"
+  initial_team_size: 6
+  team_layer_distribution:
+    layer_3: 0.55
+    layer_4: 0.30
+    layer_5: 0.15
+  initial_runway_months: 14
+  monthly_burn_per_engineer_usd: 16000
+  initial_arr_usd: 0
+  trl_initial: 5
+  trl_target: 8
+  cac_usd: 6500
+  ltv_usd: 52000
+  churn_monthly: 0.018
+  ai_substitution_potential_layer4: 0.85

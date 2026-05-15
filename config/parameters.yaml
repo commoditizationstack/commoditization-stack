@@ -1,0 +1,134 @@
+# ==========================================================================
+# GLOBAL DEFAULT PARAMETERS
+# Override in scenario-specific YAMLs under config/scenarios/.
+# All numeric inputs to the simulation are documented here.
+# ==========================================================================
+
+simulation:
+  random_seed: 42
+  monte_carlo_runs: 10000
+  time_horizon_quarters: 32
+  output_dir: "outputs"
+
+# Six layers of the knowledge-production stack.
+stack_layers:
+  layer_1_infra_inference:
+    name: "Infrastructure (inference compute)"
+    velocity: 0.40
+    substitutability_2026: 0.85
+  layer_1_infra_training:
+    name: "Infrastructure (training compute)"
+    velocity: -0.10
+    substitutability_2026: 0.10
+  layer_2_foundation_models:
+    name: "Foundation models"
+    velocity: 0.20
+    substitutability_2026: 0.55
+  layer_3_capability_access:
+    name: "Capability access (APIs)"
+    velocity: 0.35
+    substitutability_2026: 0.80
+  layer_4_codified_synthesis:
+    name: "Codified retrieval, synthesis, prototyping"
+    velocity: 0.30
+    substitutability_2026: 0.70
+  layer_5_hypothesis:
+    name: "Hypothesis formulation and judgment"
+    velocity: 0.05
+    substitutability_2026: 0.20
+  layer_6_institutional:
+    name: "Institutional embedding and certification"
+    velocity: -0.05
+    substitutability_2026: 0.05
+
+# Default startup baseline.
+startup:
+  initial_team_size: 12
+  team_layer_distribution:
+    layer_3: 0.65
+    layer_4: 0.20
+    layer_5: 0.15
+  initial_runway_months: 18
+  monthly_burn_per_engineer_usd: 12000
+  initial_arr_usd: 0
+  trl_initial: 4
+  trl_target: 8
+  cac_usd: 8000
+  ltv_usd: 45000
+  churn_monthly: 0.025
+  ai_substitution_potential_layer4: 0.50
+
+# Investor model parameters.
+investor:
+  target_irr: 0.40
+  hold_period_years: 6
+  default_dilution_per_round: 0.20
+  use_ai_aware_thesis: true
+  thesis_weights_classical:
+    team_quality: 0.30
+    technology_moat: 0.25
+    market_size: 0.20
+    traction: 0.15
+    regulatory_position: 0.10
+  thesis_weights_ai_aware:
+    team_quality: 0.20
+    hypothesis_quality: 0.30
+    institutional_embedding: 0.25
+    technology_moat: 0.10
+    market_size: 0.10
+    traction: 0.05
+
+# Valuation parameters.
+valuation:
+  berkus_factor_cap_usd: 500000
+  berkus_factor_weights:
+    sound_idea: 1.0
+    prototype: 1.0
+    quality_team: 1.0
+    strategic_relationships: 1.0
+    product_rollout: 1.0
+  damodaran_key_person_discount_classical: 0.175
+  damodaran_inverted_threshold_layer4_share: 0.55
+  damodaran_inverted_max_premium: 0.15
+  comparable_revenue_multiple_baseline: 8.0
+  comparable_multiple_volatility_post_genai: 0.35
+
+# Hype cycle parameters.
+hype_cycle:
+  classical:
+    peak_quarter: 4
+    trough_quarter: 12
+    plateau_quarter: 24
+    peak_height: 100
+    trough_height: 20
+    plateau_height: 60
+  post_genai:
+    peak_quarter: 3
+    trough_quarter: 8
+    trough_height: 10
+    second_peak_quarter: 14
+    second_peak_height: 45
+    commoditization_valley_quarter: 18
+    commoditization_valley_height: 25
+    plateau_quarter: 28
+    plateau_height: 50
+
+# Death valley parameters.
+death_valley:
+  classical:
+    valley_start_month: 6
+    valley_end_month: 18
+    minimum_runway_months: 3
+  post_genai:
+    classical_valley_start_month: 4
+    classical_valley_end_month: 10
+    commoditization_valley_start_month: 18
+    commoditization_valley_end_month: 30
+
+# Monte Carlo distributions.
+monte_carlo:
+  team_size_cv: 0.20
+  burn_rate_cv: 0.15
+  ai_substitution_cv: 0.25
+  market_multiple_cv: 0.30
+  layer_velocity_cv: 0.20

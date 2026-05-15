@@ -1,0 +1,70 @@
+scenario_name: "neurocertify_deeptech_hit"
+description: >
+  NeuroCertify: Franco-Brazilian deep-tech startup developing automated
+  certification software for medical AI algorithms. Conformance with
+  EU AI Act (Regulation 2024/1689), ISO/IEC 42001:2023, and ANVISA
+  Brazilian medical-device regulation. The firm is regulated and
+  defensibility-rich: Layer 6 (regulatory accreditation) is the
+  dominant source of value, while Layer 4 (codified report drafting)
+  is less than half of team effort. The firm progresses TRL 4 (Y1) to
+  TRL 7 (Y5).
+
+  This scenario is used in Appendix A of the paper "The Cost Gradient
+  of the Build" (de Miranda Neto, 2026) to demonstrate how the seven-
+  layer framework produces a higher valuation than classical Damodaran
+  for a defensibility-rich deep-tech firm, BECAUSE the layer-decomposed
+  risk premium captures Layer 6 protection that the industry beta
+  averages out.
+
+inherits: "parameters.yaml"
+
+# Damodaran Industry: Heathcare Information and Technology (115 firms, Jan 2026)
+# Source: pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/Betas.html
+damodaran_industry:
+  industry_name: "Heathcare Information and Technology"
+  number_of_firms: 115
+  unlevered_beta: 0.99
+  unlevered_beta_corrected_for_cash: 1.02
+  market_de_ratio: 0.1574
+  effective_tax_rate: 0.0638
+  std_dev_equity: 0.6378
+  std_dev_operating_income_10y: 0.3553
+  data_date: "January 2026"
+
+discount_rate_inputs:
+  risk_free_rate: 0.0425       # US 10-year Treasury, illustrative early 2026
+  equity_risk_premium: 0.055   # Damodaran ERP for the US, Jan 2026
+
+trl_trajectory:
+  year_labels: ["Y1", "Y2", "Y3", "Y4", "Y5"]
+  trl_by_year: [4, 5, 6, 7, 7]
+
+layer_exposure:
+  # Where the firm's value sits across the seven layers.
+  # NeuroCertify is anti-commoditization-rich: heavy on Layer 6
+  # (regulatory accreditation, certification, institutional trust)
+  # and Layer 5 (judgment about which AI algorithms are admissible
+  # under regulation), with low Layer 4 share.
+  layer_1_infra: 0.05
+  layer_2_foundation: 0.05
+  layer_3_capability: 0.05
+  layer_4_codified: 0.20       # 20% of team effort on routine reports
+  layer_5_judgment: 0.20       # 20% on regulatory judgment
+  layer_6_institutional: 0.40  # 40% on accreditation & relationships
+  layer_7_crossborder: 0.05
+
+K7: 0.7                          # current illustrative regime, 2026
+layer4_substitution_potential: 0.50
+
+cash_flows:
+  # Annual free cash flow projections (USD), realistic for a regulated
+  # deep-tech firm with extended development timeline.
+  year_labels: ["Y1", "Y2", "Y3", "Y4", "Y5"]
+  fcf_usd: [-1_500_000, -800_000, 1_200_000, 5_500_000, 12_000_000]
+
+terminal_growth_rate: 0.04
+
+second_valley_drag: 0.05  # Mild: Layer 6 protects against the second valley
+
+# Funding-stage projection
+funding_stage_target_at_y5: "series_b"

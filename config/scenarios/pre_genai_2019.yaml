@@ -1,0 +1,32 @@
+scenario_name: "pre_genai_2019_baseline"
+description: >
+  Classical Lean Startup baseline. Pre-ChatGPT world, where building an MVP
+  required a full engineering team and iteration cycles took weeks to months.
+
+inherits: "parameters.yaml"
+
+stack_layers:
+  layer_4_codified_synthesis:
+    name: "Codified retrieval, synthesis, prototyping"
+    velocity: 0.0
+    substitutability_2026: 0.05
+
+startup:
+  sector: "saas_b2b_logistics_2019"
+  initial_team_size: 18
+  team_layer_distribution:
+    layer_3: 0.70
+    layer_4: 0.20
+    layer_5: 0.10
+  initial_runway_months: 18
+  monthly_burn_per_engineer_usd: 11000
+  initial_arr_usd: 0
+  trl_initial: 4
+  trl_target: 8
+  cac_usd: 8000
+  ltv_usd: 45000
+  churn_monthly: 0.025
+  ai_substitution_potential_layer4: 0.05
+
+investor:
+  use_ai_aware_thesis: false

@@ -1,0 +1,52 @@
+scenario_name: "labor_preservation_K7_04"
+description: >
+  Counterfactual scenario exploring the within-bloc channel by which lower K7
+  mechanically slows Layer-4 substitution. Reference values K7 = 0.4 (heavily
+  fragmented cross-border knowledge regime, illustrative of a 2030 fragmented
+  scenario). The within-bloc effect is that AI tools trained on a smaller and
+  more bloc-specific corpus are less capable on cross-bloc tasks, the
+  substitution NPV contracts, and Layer-4 jobs face less mechanical pressure.
+  Note: this scenario does NOT model the macroeconomic consequences of
+  fragmentation, which run in the opposite direction (productivity loss,
+  loss of economies of scale, reduced cross-border collaboration). See the
+  paper, Section 10 ("The bidirectional relationship between K7 and
+  labor-market outcomes") for the joint discussion. K7 is a descriptive
+  indicator of the regime, not a policy lever; this scenario should be read
+  as exploratory rather than prescriptive.
+
+inherits: "parameters.yaml"
+
+knowledge_regime:
+  K7: 0.4
+  regime_label: "fragmented_2030_counterfactual"
+  bloc_assignment: "single_bloc"
+  notes: >
+    K7 = 0.4 corresponds in the paper's illustrative scenarios to a 2030
+    fragmented regime. This is a hypothetical value used for sensitivity
+    analysis; it is not an estimate of the actual state of the cross-border
+    knowledge regime in 2030 or any other year.
+
+startup:
+  sector: "saas_b2b_logistics_fragmented_bloc"
+  initial_team_size: 8
+  team_layer_distribution:
+    layer_3: 0.70
+    layer_4: 0.20
+    layer_5: 0.10
+  initial_runway_months: 14
+  monthly_burn_per_engineer_usd: 14000
+  initial_arr_usd: 0
+  trl_initial: 5
+  trl_target: 8
+  cac_usd: 6500
+  ltv_usd: 52000
+  churn_monthly: 0.018
+  ai_substitution_potential_layer4: 0.55
+
+investor:
+  use_ai_aware_thesis: true
+
+valuation:
+  comparable_revenue_multiple_baseline: 7.5
+  damodaran_key_person_discount_classical: 0.18
+  damodaran_inverted_threshold_layer4_share: 0.55

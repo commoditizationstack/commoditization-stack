@@ -1,0 +1,17 @@
+,NeuroCertify,DataFlow Pro
+Company,NeuroCertify (Deep-tech HIT),DataFlow Pro (Software commoditizing)
+Damodaran sector,Heathcare Information and Technology,Software (System & Application)
+Industry unlevered beta (Jan 2026),0.99,1.23
+Industry std dev equity,63.8%,56.8%
+TRL Y1,4,8
+TRL Y5,7,9
+Layer-4 share,20%,55%
+Layer-6 share,40%,10%
+Classical Damodaran rate,10.50%,11.37%
+Layered rate (Y1),19.29%,18.47%
+Layered rate (Y5),13.29%,16.47%
+Classical EV (USD),"$126,456,179","$75,781,029"
+Layered EV (USD),"$69,340,547","$28,268,004"
+Layered/Classical ratio,0.55x,0.37x
+Implied funding stage (classical),series_b,series_a
+Implied funding stage (layered),series_a,seed

@@ -1,0 +1,33 @@
+scenario_name: "post_genai_2026_saas_b2b_logistics"
+description: >
+  AI-native B2B SaaS firm targeting last-mile delivery optimization and
+  fleet-level analytics for mid-size logistics operators. Founded 2024,
+  operates in a market where AI-enabled prototyping has compressed the
+  time-to-MVP from 6 months to 3 weeks.
+
+inherits: "parameters.yaml"
+
+startup:
+  sector: "saas_b2b_logistics"
+  initial_team_size: 8
+  team_layer_distribution:
+    layer_3: 0.70
+    layer_4: 0.20
+    layer_5: 0.10
+  initial_runway_months: 14
+  monthly_burn_per_engineer_usd: 14000
+  initial_arr_usd: 0
+  trl_initial: 5
+  trl_target: 8
+  cac_usd: 6500
+  ltv_usd: 52000
+  churn_monthly: 0.018
+  ai_substitution_potential_layer4: 0.55
+
+investor:
+  use_ai_aware_thesis: true
+
+valuation:
+  comparable_revenue_multiple_baseline: 7.5
+  damodaran_key_person_discount_classical: 0.18
+  damodaran_inverted_threshold_layer4_share: 0.55

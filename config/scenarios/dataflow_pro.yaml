@@ -1,0 +1,72 @@
+scenario_name: "dataflow_pro_saas_commoditizing"
+description: >
+  DataFlow Pro: US-domiciled B2B SaaS startup providing fleet-level
+  analytics and last-mile delivery optimization for mid-sized logistics
+  operators. Founded 2024, launches its product in 2026. The technology
+  itself is not novel: TRL 8 from year 1 (system complete and qualified).
+  Layer-4 share of team effort is 70% (frontend code generation, API
+  integrations, dashboards, customer-support boilerplate).
+
+  This scenario is used in Appendix A of the paper "The Cost Gradient
+  of the Build" (de Miranda Neto, 2026) to demonstrate how the seven-
+  layer framework produces a LOWER valuation than classical Damodaran
+  for a Layer-4-heavy commoditizing-tech firm, BECAUSE the layer-
+  decomposed risk premium captures the erosion of competitive moat
+  that the industry beta has not yet repriced.
+
+inherits: "parameters.yaml"
+
+# Damodaran Industry: Software (System & Application) (309 firms, Jan 2026)
+# Source: pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/Betas.html
+damodaran_industry:
+  industry_name: "Software (System & Application)"
+  number_of_firms: 309
+  unlevered_beta: 1.23
+  unlevered_beta_corrected_for_cash: 1.25
+  market_de_ratio: 0.0558
+  effective_tax_rate: 0.0551
+  std_dev_equity: 0.5679
+  std_dev_operating_income_10y: 0.4863
+  data_date: "January 2026"
+
+discount_rate_inputs:
+  risk_free_rate: 0.0425       # US 10-year Treasury, illustrative early 2026
+  equity_risk_premium: 0.055   # Damodaran ERP for the US, Jan 2026
+
+trl_trajectory:
+  year_labels: ["Y1", "Y2", "Y3", "Y4", "Y5"]
+  trl_by_year: [8, 8, 8, 9, 9]   # technology complete from day 1
+
+layer_exposure:
+  # Where the firm's value sits across the seven layers.
+  # DataFlow Pro is Layer-4-heavy: most of the team's work is
+  # codified retrieval/synthesis/coding that is now substitutable
+  # by frontier models. Very little Layer 5 judgment, very little
+  # Layer 6 institutional moat (no regulatory accreditation, no
+  # network effect at the platform level beyond simple switching cost).
+  layer_1_infra: 0.05
+  layer_2_foundation: 0.05
+  layer_3_capability: 0.10
+  layer_4_codified: 0.55       # 55% of team effort on routine code/integration
+  layer_5_judgment: 0.10       # only 10% on judgment-laden tasks
+  layer_6_institutional: 0.10  # weak network effect, no certification
+  layer_7_crossborder: 0.05
+
+K7: 0.7                          # current illustrative regime, 2026
+layer4_substitution_potential: 0.75   # high: code, dashboards, API are easily replicable
+
+cash_flows:
+  # Annual free cash flow projections (USD), under the
+  # post-AI environment with double-valley pattern (Section 6.5).
+  # Y2 looks promising (false recovery), Y3 dips again as
+  # competitors close the gap (second valley), Y4-Y5 recover but
+  # at lower margins than the classical pattern would suggest.
+  year_labels: ["Y1", "Y2", "Y3", "Y4", "Y5"]
+  fcf_usd: [-1_200_000, 800_000, -200_000, 4_000_000, 9_500_000]
+
+terminal_growth_rate: 0.03
+
+second_valley_drag: 0.30  # Significant: Layer 4 erosion plus weak Layer 6 protection
+
+# Funding-stage projection
+funding_stage_target_at_y5: "series_b"

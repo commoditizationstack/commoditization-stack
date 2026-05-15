@@ -1,0 +1,48 @@
+scenario_name: "post_genai_2026_united_states_saas_b2b"
+description: >
+  US-based SaaS B2B firm operating under W-2 regime in a tech-friendly state
+  (Delaware/California). Same operational profile as post_genai_2026, with
+  US fiscal-accounting parameters: federal FICA + FUTA + state SUTA total
+  ~8-10%, voluntary healthcare/401k typical at competitive ~15-20%, at-will
+  termination with light contractual severance ~5-15%, domestic SaaS without
+  import overhead. The accounting-substitution problem predicts the most
+  attenuated inverted key-person discount in this jurisdiction, because the
+  marginal cost of substituting an at-will employee with a domestic SaaS
+  subscription is the smallest of the three reference jurisdictions.
+
+inherits: "parameters.yaml"
+
+startup:
+  sector: "saas_b2b_logistics_us"
+  initial_team_size: 8
+  team_layer_distribution:
+    layer_3: 0.70
+    layer_4: 0.20
+    layer_5: 0.10
+  initial_runway_months: 14
+  monthly_burn_per_engineer_usd: 14000         # US senior dev market rate
+  initial_arr_usd: 0
+  trl_initial: 5
+  trl_target: 8
+  cac_usd: 6500
+  ltv_usd: 52000
+  churn_monthly: 0.018
+  ai_substitution_potential_layer4: 0.55
+
+investor:
+  use_ai_aware_thesis: true
+
+valuation:
+  comparable_revenue_multiple_baseline: 7.5
+  damodaran_key_person_discount_classical: 0.18
+  damodaran_inverted_threshold_layer4_share: 0.55
+
+jurisdiction:
+  name: "united_states"
+  avg_base_salary_usd: 165000                  # mid-senior US dev
+  annual_ai_cost_per_replaced_employee_usd: 4800
+  labor_cost_multiplier: 1.25
+  termination_cost_fraction: 0.10
+  notice_period_fraction: 0.0
+  ai_service_overhead: 1.00
+  vendor_risk_wacc_premium: 0.002

@@ -1,0 +1,69 @@
+jurisdiction,scenario,K7,inversion_premium_pct
+Brazil (CLT),same_bloc,0.2,0.0
+Brazil (CLT),same_bloc,0.25,0.0
+Brazil (CLT),same_bloc,0.30000000000000004,0.0
+Brazil (CLT),same_bloc,0.35000000000000003,0.0
+Brazil (CLT),same_bloc,0.4,0.0
+Brazil (CLT),same_bloc,0.45,0.0
+Brazil (CLT),same_bloc,0.5,0.4761071476654981
+Brazil (CLT),same_bloc,0.55,0.5713285771985979
+Brazil (CLT),same_bloc,0.6000000000000001,0.5713285771985979
+Brazil (CLT),same_bloc,0.65,0.6665500067316973
+Brazil (CLT),same_bloc,0.7,0.7617714362647972
+Brazil (CLT),same_bloc,0.75,0.7617714362647972
+Brazil (CLT),same_bloc,0.8,0.8569928657978967
+Brazil (CLT),same_bloc,0.8500000000000001,0.8569928657978967
+Brazil (CLT),same_bloc,0.9000000000000001,0.9522142953309962
+Brazil (CLT),same_bloc,0.95,0.9522142953309962
+Brazil (CLT),same_bloc,1.0,1.047435724864096
+France (CDI),same_bloc,0.2,0.0
+France (CDI),same_bloc,0.25,0.0
+France (CDI),same_bloc,0.30000000000000004,0.0
+France (CDI),same_bloc,0.35000000000000003,0.0
+France (CDI),same_bloc,0.4,0.0
+France (CDI),same_bloc,0.45,0.0
+France (CDI),same_bloc,0.5,0.7904166368185743
+France (CDI),same_bloc,0.55,0.9484999641822892
+France (CDI),same_bloc,0.6000000000000001,0.9484999641822892
+France (CDI),same_bloc,0.65,1.106583291546004
+France (CDI),same_bloc,0.7,1.264666618909719
+France (CDI),same_bloc,0.75,1.264666618909719
+France (CDI),same_bloc,0.8,1.4227499462734339
+France (CDI),same_bloc,0.8500000000000001,1.4227499462734339
+France (CDI),same_bloc,0.9000000000000001,1.5808332736371487
+France (CDI),same_bloc,0.95,1.5808332736371487
+France (CDI),same_bloc,1.0,1.7389166010008636
+United States (W-2),same_bloc,0.2,0.0
+United States (W-2),same_bloc,0.25,0.0
+United States (W-2),same_bloc,0.30000000000000004,0.0
+United States (W-2),same_bloc,0.35000000000000003,0.0
+United States (W-2),same_bloc,0.4,0.0
+United States (W-2),same_bloc,0.45,0.0
+United States (W-2),same_bloc,0.5,1.7652463824686464
+United States (W-2),same_bloc,0.55,2.1182956589623756
+United States (W-2),same_bloc,0.6000000000000001,2.1182956589623756
+United States (W-2),same_bloc,0.65,2.4713449354561052
+United States (W-2),same_bloc,0.7,2.8243942119498344
+United States (W-2),same_bloc,0.75,2.8243942119498344
+United States (W-2),same_bloc,0.8,3.1774434884435636
+United States (W-2),same_bloc,0.8500000000000001,3.1774434884435636
+United States (W-2),same_bloc,0.9000000000000001,3.530492764937293
+United States (W-2),same_bloc,0.95,3.530492764937293
+United States (W-2),same_bloc,1.0,3.8835420414310216
+United States (W-2) cross-bloc,cross_bloc,0.2,0.0
+United States (W-2) cross-bloc,cross_bloc,0.25,0.0
+United States (W-2) cross-bloc,cross_bloc,0.30000000000000004,0.0
+United States (W-2) cross-bloc,cross_bloc,0.35000000000000003,0.0
+United States (W-2) cross-bloc,cross_bloc,0.4,0.0
+United States (W-2) cross-bloc,cross_bloc,0.45,0.0
+United States (W-2) cross-bloc,cross_bloc,0.5,0.0
+United States (W-2) cross-bloc,cross_bloc,0.55,0.0
+United States (W-2) cross-bloc,cross_bloc,0.6000000000000001,0.0
+United States (W-2) cross-bloc,cross_bloc,0.65,0.0
+United States (W-2) cross-bloc,cross_bloc,0.7,1.7652463824686464
+United States (W-2) cross-bloc,cross_bloc,0.75,2.1182956589623756
+United States (W-2) cross-bloc,cross_bloc,0.8,2.1182956589623756
+United States (W-2) cross-bloc,cross_bloc,0.8500000000000001,2.1182956589623756
+United States (W-2) cross-bloc,cross_bloc,0.9000000000000001,2.4713449354561052
+United States (W-2) cross-bloc,cross_bloc,0.95,2.4713449354561052
+United States (W-2) cross-bloc,cross_bloc,1.0,2.8243942119498344

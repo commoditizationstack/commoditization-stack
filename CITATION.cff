@@ -1,0 +1,49 @@
+cff-version: 1.2.0
+title: commoditization-stack-simulation
+message: "If you use this software, please cite it using the metadata below."
+type: software
+authors:
+  - given-names: Arthur
+    family-names: de Miranda Neto
+    email: arthur.miranda@ufla.br
+    affiliation: "Federal University of Lavras (UFLA)"
+repository-code: "[GitHub TBD]"
+abstract: >
+  Computational appendix to the working paper "The Cost Gradient of the Build:
+  Generative AI and the Strategic Reinvention of Innovation-Driven
+  Entrepreneurship" (de Miranda Neto, 2026). Implements a seven-layer framework
+  of the knowledge-production stack with deterministic and Monte Carlo
+  simulators of deep-tech startup dynamics, four valuation methods including
+  an inverted Damodaran key-person discount, a Gartner-style hype cycle
+  reformulated for the post-AI regime, a layered theory of post-AI
+  defensibility, a jurisdictionally-structured analysis of the
+  accounting-substitution problem with reference parameters for Brazil (CLT),
+  France (CDI), and the United States (W-2), and a tentative seventh layer
+  (cross-border knowledge regime, Section 4.7 of the paper) that exposes a
+  knowledge-integration coefficient K and modulates the velocities of
+  Layers 3, 4, and 5 in response to the trajectory of scientific decoupling
+  and data-sovereignty fragmentation. The framework is open: users can modify
+  parameters, add jurisdictions, vary K, and construct their own scenarios.
+keywords:
+  - generative AI
+  - commoditization
+  - cost gradient
+  - knowledge economy
+  - venture capital
+  - valuation
+  - Damodaran
+  - key person discount
+  - Lean Startup
+  - Minimum Viable Hypothesis
+  - defensibility
+  - network effects
+  - accounting substitution
+  - jurisdictional analysis
+  - cross-border knowledge regime
+  - sovereign AI
+  - science decoupling
+  - data sovereignty
+  - simulation
+license: MIT
+version: "0.5"
+date-released: "2026-05-07"

@@ -1,0 +1,4 @@
+jurisdiction,labor_cost_multiplier,ai_overhead,termination_frac,avg_salary_usd,annual_labor_eliminated_usd,annual_ai_added_usd,net_annual_savings_usd,termination_cost_usd,npv_substitution_usd,inversion_premium_pct_of_EV,effective_discount_rate_pct,regime
+Brazil (CLT),1.8,1.3,0.333,35000,1890000.0,187200.0,1702800.0,349650.0,5713285.771985978,1.047435724864096,12.66089760846924,inverted
+France (CDI),1.42,1.2,0.5670000000000001,75000,3195000.0,172800.0,3022200.0,1275750.0000000002,9484999.641822893,1.7389166010008636,11.969416732332473,inverted
+United States (W-2),1.25,1.0,0.1,165000,6187500.0,144000.0,6043500.0,495000.0,21182956.589623757,3.8835420414310216,9.824791291902315,inverted

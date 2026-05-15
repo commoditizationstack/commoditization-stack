@@ -1,0 +1,40 @@
+scenario_name: "adas_regulated_2026"
+description: >
+  Alternative sector: ADAS / autonomous mobility deep-tech firm operating
+  under regulated certification (ISO/IEC 42001, ISO/PAS 8800, EU AI Act).
+  Layer 6 weight is much higher than in unregulated SaaS, which slows
+  layer-4 commoditization effects on the firm.
+
+inherits: "parameters.yaml"
+
+stack_layers:
+  layer_6_institutional:
+    name: "Institutional embedding and certification"
+    velocity: -0.08
+    substitutability_2026: 0.02
+
+startup:
+  sector: "adas_regulated"
+  initial_team_size: 20
+  team_layer_distribution:
+    layer_3: 0.45
+    layer_4: 0.25
+    layer_5: 0.30
+  initial_runway_months: 24
+  monthly_burn_per_engineer_usd: 16000
+  initial_arr_usd: 0
+  trl_initial: 6
+  trl_target: 9
+  cac_usd: 250000
+  ltv_usd: 1800000
+  churn_monthly: 0.005
+  ai_substitution_potential_layer4: 0.30
+
+investor:
+  use_ai_aware_thesis: true
+  hold_period_years: 8
+
+valuation:
+  comparable_revenue_multiple_baseline: 9.5
+  damodaran_key_person_discount_classical: 0.22
+  damodaran_inverted_threshold_layer4_share: 0.65
