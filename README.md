@@ -25,9 +25,9 @@ The repository allows any user — researcher, practitioner, firm strategist, po
 ## Quick start
 
 ```bash
-git clone [GitHub TBD].git
+git clone git@github.com:ademiran/commoditization-stack-simulation.git
 cd commoditization-stack-simulation
-python -m venv venv && source venv/bin/activate
+python -m venv .venv && source .venv/bin/activate   # Windows PowerShell: .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 python scripts/run_deterministic.py            # generates Figures 1, 2, 5, 6, 7 of the paper
 python scripts/run_jurisdictional.py           # generates Figures 9, 10, 11 + jurisdictional tables
