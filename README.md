@@ -96,7 +96,7 @@ MIT License (see `LICENSE`).
 ## Author
 
 Arthur de Miranda Neto — Federal University of Lavras (UFLA), Department of Automation, Lavras, Minas Gerais, Brazil.
-Email: arthur.miranda@ufla.br
+LinkedIn: https://www.linkedin.com/in/arthur-mneto/
 
 Contributions, parameter critiques, jurisdictional case studies, alternative K7 trajectories, and pull requests are warmly welcome. The framework is intentionally open so that practitioners, firms, governments, and researchers can use, modify, extend, and improve it. The author hopes that the framework will serve as a starting point for a conversation, not as a finished account.
 
