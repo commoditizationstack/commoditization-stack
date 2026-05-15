@@ -1,7 +1,7 @@
 """Seven-layer framework of the knowledge-production stack.
 
 All seven layers of the framework introduced in Section 4 of the working paper
-"The End of the Build" (de Miranda Neto, 2026) are implemented in this single
+"The Cost Gradient of the Build" (de Miranda Neto, 2026) are implemented in this single
 module. Layers 1 through 6 are the empirically grounded core; Layer 7
 (cross-border knowledge regime) is offered as a tentative hypothesis in
 Section 4.7 and is implemented at the end of this module via
