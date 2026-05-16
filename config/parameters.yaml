@@ -1,16 +1,54 @@
-# ==========================================================================
-# GLOBAL DEFAULT PARAMETERS
-# Override in scenario-specific YAMLs under config/scenarios/.
-# All numeric inputs to the simulation are documented here.
-# ==========================================================================
+# ============================================================================
+# GLOBAL DEFAULT PARAMETERS - SINGLE SOURCE OF TRUTH
+# ============================================================================
+# Every tunable numeric parameter in the simulation is documented here.
+# Code in src/, scripts/ and app/ reads from this file via src/config.py.
+# Scenario YAMLs under config/scenarios/ override any subset by deep-merge.
+#
+# Sections:
+#   1. simulation             - top-level run controls (seed, MC runs, horizon)
+#   2. monte_carlo            - Monte Carlo perturbation envelopes
+#   3. stack_layers           - 7-layer framework velocities & substitutabilities
+#   4. knowledge_regimes      - Layer 7 K7 regime defaults + cross-border friction
+#   5. startup                - team, runway, sector economics, growth dynamics
+#   6. investor               - thesis weights, scoring normalizations
+#   7. valuation              - Damodaran (classical + inverted), comparables, Berkus
+#   8. valuation_layered      - TRL premium, layer-risk coefficients, exposure, stages
+#   9. valuation_two_phase    - phase boundaries + per-phase beta/D-E/spread defaults
+#  10. firms_appendix_b       - NeuroCertify + DataFlow Pro fixtures for Appendix B
+#  11. jurisdictions          - Brazil/France/US fiscal-accounting parameters
+#  12. hype_cycle             - classical + post-genai curve parameters
+#  13. death_valley           - cash-trajectory templates
+#  14. sweeps                 - script-level sweep grids (heatmaps, sensitivity)
+#  15. streamlit_ui           - Streamlit slider defaults and firm profile presets
+#  16. structural             - structural constants (logit scaling, clip bounds)
+# ============================================================================
 
+# ----------------------------------------------------------------------------
+# 1. SIMULATION
+# ----------------------------------------------------------------------------
 simulation:
   random_seed: 42
   monte_carlo_runs: 10000
   time_horizon_quarters: 32
   output_dir: "outputs"
 
-# Six layers of the knowledge-production stack.
+# ----------------------------------------------------------------------------
+# 2. MONTE CARLO - perturbation standard deviations (log-normal CV)
+# ----------------------------------------------------------------------------
+monte_carlo:
+  team_size_cv: 0.20
+  burn_rate_cv: 0.15
+  ai_substitution_cv: 0.25
+  market_multiple_cv: 0.30
+  layer_velocity_cv: 0.20
+  substitutability_perturbation_sigma: 0.05  # additive noise on s_2026 per layer
+
+# ----------------------------------------------------------------------------
+# 3. STACK LAYERS - seven layers of the knowledge-production stack
+# Layer 1 is split into training/inference because their velocities differ
+# in sign; the two sub-keys count as one layer in the paper's numbering.
+# ----------------------------------------------------------------------------
 stack_layers:
   layer_1_infra_inference:
     name: "Infrastructure (inference compute)"
@@ -41,7 +79,38 @@ stack_layers:
     velocity: -0.05
     substitutability_2026: 0.05
 
-# Default startup baseline.
+# ----------------------------------------------------------------------------
+# 4. KNOWLEDGE REGIMES (Layer 7 - tentative hypothesis)
+# K7 = knowledge-integration coefficient (0..1). Three reference regimes.
+# cross_border_friction is applied when target_bloc != acquirer_bloc.
+# ----------------------------------------------------------------------------
+knowledge_regimes:
+  cross_border_friction: 0.30
+  default_regime: "current_2026"
+  regimes:
+    globalized_2020:
+      K_coefficient: 1.00
+      bloc_assignment: "globally_integrated"
+      layer4_substitution_modulator: 1.00
+      layer5_judgment_bias_factor: 1.00
+      notes: "Pre-decoupling baseline. Approximate state circa 2018-2020."
+    current_2026:
+      K_coefficient: 0.70
+      bloc_assignment: "western"
+      layer4_substitution_modulator: 0.70
+      layer5_judgment_bias_factor: 0.85
+      notes: "Current estimated regime. Partial fragmentation. Illustrative value, not estimated."
+    fragmented_2030:
+      K_coefficient: 0.40
+      bloc_assignment: "western"
+      layer4_substitution_modulator: 0.40
+      layer5_judgment_bias_factor: 0.55
+      notes: "Hypothetical 2030 severe-fragmentation scenario. Counterfactual."
+  layer5_judgment_bias_factor_floor: 0.10  # divisor floor when computing judgment value
+
+# ----------------------------------------------------------------------------
+# 5. STARTUP - team composition, sector economics, growth dynamics
+# ----------------------------------------------------------------------------
 startup:
   initial_team_size: 12
   team_layer_distribution:
@@ -58,12 +127,50 @@ startup:
   churn_monthly: 0.025
   ai_substitution_potential_layer4: 0.50
 
-# Investor model parameters.
+  # Growth dynamics (paper-calibrated; previously hardcoded in src/startup.py)
+  growth:
+    runway_months_before_team_can_grow: 10.0
+    max_team_size_multiplier: 6                 # cap on team size = initial * this
+    team_growth_per_month: 0.05                 # 5% MoM when growth is allowed
+    seed_arr_threshold_usd: 50000               # ARR threshold to leave seed phase
+    seed_arr_per_engineer_month_usd: 800.0      # ARR per eng-month during seed
+    seed_growth_noise_sigma: 0.20               # log-normal noise on seed growth
+    base_saas_growth_rate: 0.10                 # monthly compounding once past seed
+    base_growth_noise_sigma: 0.10               # log-normal noise on SaaS growth
+    trl_growth_per_month: 0.08                  # TRL units gained per month
+    min_arr_for_saas_phase_usd: 1000000         # used by Investor's 5y projection
+    saas_projection_growth_rate: 1.6            # 60% YoY in projection
+    revenue_to_monthly_factor: 12               # ARR → monthly revenue divisor
+
+  # Funding events (Series A/B/C). The multipliers scale to burn rate.
+  funding_events:
+    series_a_month: 12
+    series_b_month: 24
+    series_c_month: 36
+    series_a_min_usd: 4000000
+    series_b_min_usd: 12000000
+    series_c_min_usd: 25000000
+    series_a_burn_multiplier: 18   # months of burn covered
+    series_b_burn_multiplier: 30
+    series_c_burn_multiplier: 36
+
+  market_size_usd: 2000000000   # default target market for simulation harness
+
+# ----------------------------------------------------------------------------
+# 6. INVESTOR - thesis weights, scoring normalizations
+# ----------------------------------------------------------------------------
 investor:
   target_irr: 0.40
   hold_period_years: 6
   default_dilution_per_round: 0.20
   use_ai_aware_thesis: true
+  decision_threshold: 0.55
+  overpriced_negotiation_multiple: 1.5
+  scoring:
+    # Score normalizations in Investor.score_startup() — currently log10-based.
+    market_size_log_divisor: 11.0   # log10($1T) ≈ 11 saturates score
+    traction_log_divisor: 8.0       # log10($100M ARR) ≈ 8 saturates score
+    market_size_floor_usd: 1000000  # input floor before log
   thesis_weights_classical:
     team_quality: 0.30
     technology_moat: 0.25
@@ -78,7 +185,9 @@ investor:
     market_size: 0.10
     traction: 0.05
 
-# Valuation parameters.
+# ----------------------------------------------------------------------------
+# 7. VALUATION - Berkus, VC method, comparables, Damodaran classical+inverted
+# ----------------------------------------------------------------------------
 valuation:
   berkus_factor_cap_usd: 500000
   berkus_factor_weights:
@@ -87,13 +196,213 @@ valuation:
     quality_team: 1.0
     strategic_relationships: 1.0
     product_rollout: 1.0
+  berkus_prototype_signal_decay_2026: 0.55
+  berkus_low_band_factor: 0.7
+  berkus_high_band_factor: 1.3
+
+  vc_method_low_band_factor: 0.6
+  vc_method_high_band_factor: 1.4
+
   damodaran_key_person_discount_classical: 0.175
   damodaran_inverted_threshold_layer4_share: 0.55
   damodaran_inverted_max_premium: 0.15
+  damodaran_inversion_min_substitution_potential: 0.30  # below this, classical wins
+  damodaran_low_band_factor: 0.65
+  damodaran_high_band_factor: 1.35
+  damodaran_full_terminal_growth: 0.03
+
   comparable_revenue_multiple_baseline: 8.0
   comparable_multiple_volatility_post_genai: 0.35
 
-# Hype cycle parameters.
+# ----------------------------------------------------------------------------
+# 8. VALUATION LAYERED (Appendix A)
+# TRL-modulated discount rate (Equidam/Hectelion 2025), layer-decomposed risk
+# premium, US funding-stage benchmarks (Carta Q3 2025).
+# ----------------------------------------------------------------------------
+valuation_layered:
+  # TRL → discount premium (percentage points). Clipped to [1, 9].
+  trl_discount_premium:
+    1: 0.16
+    2: 0.14
+    3: 0.12
+    4: 0.10
+    5: 0.08
+    6: 0.06
+    7: 0.04
+    8: 0.02
+    9: 0.00
+
+  # Per-layer risk-premium coefficients. Sign indicates commoditizing (+) vs
+  # protective (-) layers. Applied to LayerExposure to get firm-specific premium.
+  layer_risk_coefficients:
+    layer_1_infra:         0.02
+    layer_2_foundation:    0.01
+    layer_3_capability:    0.04
+    layer_4_codified:      0.08
+    layer_5_judgment:     -0.04
+    layer_6_institutional: -0.06
+    layer_7_crossborder:   0.00
+
+  # Layer-4 amplification by AI substitution potential: 0.5 + s
+  layer4_substitution_amplifier_base: 0.5
+  # Layer-7 premium per unit of (1 - K7), in pp
+  layer7_k_premium_per_unit: 0.03
+
+  # Default LayerExposure (must sum to 1.0). Editable per scenario.
+  default_layer_exposure:
+    layer_1_infra:         0.05
+    layer_2_foundation:    0.05
+    layer_3_capability:    0.10
+    layer_4_codified:      0.30
+    layer_5_judgment:      0.20
+    layer_6_institutional: 0.20
+    layer_7_crossborder:   0.10
+  layer_exposure_sum_tolerance: 0.01   # allowed [0.99, 1.01]
+
+  # US funding-stage benchmarks (Carta Q3 2025).
+  us_funding_stage_benchmarks:
+    pre_seed:
+      median_premoney_usd: 13000000
+      median_round_size_usd: 1000000
+      typical_dilution: 0.125
+      expected_revenue_usd: 0
+    seed:
+      median_premoney_usd: 16000000
+      median_round_size_usd: 4000000
+      typical_dilution: 0.20
+      expected_revenue_usd: 500000
+    series_a:
+      median_premoney_usd: 49300000
+      median_round_size_usd: 14000000
+      typical_dilution: 0.179
+      expected_revenue_usd: 3000000
+    series_b:
+      median_premoney_usd: 118900000
+      median_round_size_usd: 40000000
+      typical_dilution: 0.129
+      expected_revenue_usd: 12000000
+    series_c:
+      median_premoney_usd: 350000000
+      median_round_size_usd: 100000000
+      typical_dilution: 0.10
+      expected_revenue_usd: 30000000
+
+  # stage_for_valuation() thresholds (USD EV)
+  stage_thresholds_usd:
+    pre_seed_upper: 15000000
+    seed_upper: 32500000
+    series_a_upper: 84000000
+    series_b_upper: 235000000
+
+# ----------------------------------------------------------------------------
+# 9. VALUATION TWO-PHASE (Appendix B)
+# Phase-conditional CAPM/WACC/EVA/ROI. Generic defaults; firm-specific
+# fixtures live under section 10 (firms_appendix_b).
+# ----------------------------------------------------------------------------
+valuation_two_phase:
+  default_phase_boundaries:
+    phase_1_end_year: 2
+    phase_2_end_year: 4
+  default_betas:
+    phase_1: 1.0
+    phase_2: 1.4
+    phase_3: 1.1
+  default_de_ratios:
+    phase_1: 0.05
+    phase_2: 0.10
+    phase_3: 0.20
+  default_kd_spreads:
+    phase_1: 0.03
+    phase_2: 0.06
+    phase_3: 0.04
+  default_effective_tax_rate: 0.25
+
+# ----------------------------------------------------------------------------
+# 10. FIRMS APPENDIX B - NeuroCertify + DataFlow Pro fixtures
+# Calibrated to Damodaran (Jan 2026) industry data.
+# ----------------------------------------------------------------------------
+firms_appendix_b:
+  macro:
+    risk_free_rate: 0.0425
+    equity_risk_premium: 0.055
+    terminal_growth: 0.03
+  neurocertify:
+    label: "NeuroCertify (deep-tech, HIT)"
+    second_valley_drag: 0.05
+    phases:
+      phase_1_end_year: 2
+      phase_2_end_year: 4
+      beta_unlevered_phase_1: 0.85
+      beta_unlevered_phase_2: 1.10
+      beta_unlevered_phase_3: 0.99
+      de_ratio_phase_1: 0.05
+      de_ratio_phase_2: 0.12
+      de_ratio_phase_3: 0.16
+      kd_spread_phase_1: 0.025
+      kd_spread_phase_2: 0.045
+      kd_spread_phase_3: 0.035
+      effective_tax_rate: 0.0638
+    fcf_usd: [-1500000, -800000, 1200000, 5500000, 12000000]
+    invested_capital_usd: [1500000, 2500000, 4000000, 7000000, 12000000]
+    nopat_usd: [-1400000, -700000, 1300000, 5600000, 12500000]
+  dataflow:
+    label: "DataFlow Pro (Software, commoditizing)"
+    second_valley_drag: 0.30
+    phases:
+      phase_1_end_year: 2
+      phase_2_end_year: 4
+      beta_unlevered_phase_1: 1.10
+      beta_unlevered_phase_2: 1.50
+      beta_unlevered_phase_3: 1.23
+      de_ratio_phase_1: 0.04
+      de_ratio_phase_2: 0.15
+      de_ratio_phase_3: 0.06
+      kd_spread_phase_1: 0.03
+      kd_spread_phase_2: 0.08
+      kd_spread_phase_3: 0.04
+      effective_tax_rate: 0.0551
+    fcf_usd: [-1200000, 800000, -200000, 4000000, 9500000]
+    invested_capital_usd: [1200000, 2000000, 3500000, 6000000, 10000000]
+    nopat_usd: [-1100000, 900000, -100000, 4100000, 9800000]
+
+# ----------------------------------------------------------------------------
+# 11. JURISDICTIONS - fiscal-accounting parameters for the substitution problem
+# ----------------------------------------------------------------------------
+jurisdictions:
+  default_discount_rate: 0.12
+  default_horizon_years: 5
+  defaults:
+    brazil:
+      name: "Brazil (CLT)"
+      labor_cost_multiplier: 1.80
+      termination_cost_fraction: 0.25
+      ai_service_overhead: 1.30
+      notice_period_fraction: 0.083
+      ai_opex_deductibility: 1.0
+      vendor_risk_wacc_premium: 0.005
+      notes: "CLT encargos 70-90%. Imported SaaS IRRF+CIDE+PIS/COFINS-imp. Termination FGTS multa+aviso previo."
+    france:
+      name: "France (CDI)"
+      labor_cost_multiplier: 1.42
+      termination_cost_fraction: 0.40
+      ai_service_overhead: 1.20
+      notice_period_fraction: 0.167
+      ai_opex_deductibility: 1.0
+      vendor_risk_wacc_premium: 0.005
+      notes: "Charges patronales 42-45%. CDI termination rigide. TVA-importation 20%."
+    united_states:
+      name: "United States (W-2)"
+      labor_cost_multiplier: 1.25
+      termination_cost_fraction: 0.10
+      ai_service_overhead: 1.00
+      notice_period_fraction: 0.0
+      ai_opex_deductibility: 1.0
+      vendor_risk_wacc_premium: 0.002
+      notes: "FICA+FUTA+SUTA ~8-10%. At-will termination."
+
+# ----------------------------------------------------------------------------
+# 12. HYPE CYCLE - classical Gartner + post-AI double-valley reformulation
+# ----------------------------------------------------------------------------
 hype_cycle:
   classical:
     peak_quarter: 4
@@ -113,22 +422,110 @@ hype_cycle:
     plateau_quarter: 28
     plateau_height: 50
 
-# Death valley parameters.
+# ----------------------------------------------------------------------------
+# 13. DEATH VALLEY - cash trajectory templates
+# ----------------------------------------------------------------------------
 death_valley:
   classical:
+    n_months: 36
+    initial_cash_usd: 2000000
+    monthly_burn_usd: 150000
     valley_start_month: 6
     valley_end_month: 18
+    revenue_ramp_start_month: 12
+    peak_revenue_usd_per_month: 220000
+    revenue_growth: 0.10
+    revenue_seed_usd: 5000           # additive seed each month past ramp start
     minimum_runway_months: 3
   post_genai:
+    n_months: 48
+    initial_cash_usd: 1400000
+    monthly_burn_usd_initial: 110000
     classical_valley_start_month: 4
     classical_valley_end_month: 10
-    commoditization_valley_start_month: 18
-    commoditization_valley_end_month: 30
+    commoditization_valley_start_month: 22
+    commoditization_valley_end_month: 36
+    revenue_ramp_start_month: 8
+    peak_revenue_usd_per_month: 280000
+    revenue_growth: 0.14
+    revenue_seed_usd: 6000
+    margin_compression_factor: 0.30
+    refinancing_event_month: 14
+    refinancing_amount_usd: 3000000
+    burn_growth_after_funding: 0.06
+    post_funding_burn_multiplier: 2.5
+  detection:
+    valley_threshold_factor: 0.85   # 15% below running max counts as valley
 
-# Monte Carlo distributions.
-monte_carlo:
-  team_size_cv: 0.20
-  burn_rate_cv: 0.15
-  ai_substitution_cv: 0.25
-  market_multiple_cv: 0.30
-  layer_velocity_cv: 0.20
+# ----------------------------------------------------------------------------
+# 14. SWEEPS - script-level grid resolutions (heatmaps, sensitivity)
+# ----------------------------------------------------------------------------
+sweeps:
+  inverted_keyperson_heatmap:
+    team_layer4_share_min: 0.20
+    team_layer4_share_max: 0.90
+    team_layer4_share_n: 36
+    ai_substitution_min: 0.05
+    ai_substitution_max: 0.95
+    ai_substitution_n: 36
+    enterprise_value_usd: 100000000
+    color_vmin_pct: -15
+    color_vmax_pct: 20
+  layer7_k_grid:
+    k_min: 0.0
+    k_max: 1.0
+    k_n: 21
+  notebook_layer3_sweep:
+    ai_substitution_min: 0.10
+    ai_substitution_max: 0.95
+    ai_substitution_n: 18
+    team_share_min: 0.30
+    team_share_max: 0.85
+    team_share_n: 12
+
+# ----------------------------------------------------------------------------
+# 15. STREAMLIT UI - slider defaults and pre-baked firm profiles
+# These drive the *defaults* shown when the app opens. Sliders are interactive.
+# Paper parameters are read-only displays elsewhere (see app/tabs/).
+# ----------------------------------------------------------------------------
+streamlit_ui:
+  sliders:
+    k7_default: 0.7
+    k7_min: 0.0
+    k7_max: 1.0
+    k7_step: 0.05
+    ai_substitution_default: 0.6
+    ai_substitution_min: 0.0
+    ai_substitution_max: 1.0
+    ai_substitution_step: 0.05
+    layer4_exposure_default: 0.30
+    layer5_exposure_default: 0.20
+    layer6_exposure_default: 0.20
+    layer_exposure_step: 0.05
+  firm_profiles:
+    neurocertify:
+      label: "NeuroCertify (defensibility-rich)"
+      layer4_codified: 0.20
+      layer5_judgment: 0.20
+      layer6_institutional: 0.40
+    dataflow:
+      label: "DataFlow Pro (commoditizing)"
+      layer4_codified: 0.55
+      layer5_judgment: 0.10
+      layer6_institutional: 0.10
+  tab_layers:
+    effective_substitutability_modulation: 0.7   # multiplies K7 grid for effective s
+    collapse_threshold_low: 0.40
+    collapse_threshold_high: 0.50
+    collapse_threshold_label: 0.45
+
+# ----------------------------------------------------------------------------
+# 16. STRUCTURAL - constants that are mathematical structure, not calibration
+# Listed here for transparency and reproducibility, but rarely tuned.
+# ----------------------------------------------------------------------------
+structural:
+  stack_layer_logit_scaling: 2.0       # in StackLayer.substitutability_at()
+  substitutability_clip_min: 0.01
+  substitutability_clip_max: 0.99
+  classical_hype_rise_exponent: 1.5
+  post_genai_hype_rise_exponent: 1.3
