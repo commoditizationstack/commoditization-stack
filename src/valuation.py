@@ -20,6 +20,12 @@ from dataclasses import dataclass
 from typing import Dict, Tuple, Optional, List
 import numpy as np
 
+from . import config
+
+
+def _v() -> Dict:
+    return config.load_parameters()["valuation"]
+
 
 @dataclass
 class ValuationResult:
@@ -40,9 +46,19 @@ def berkus_valuation(
     factor_scores: Dict[str, float],
     factor_cap_usd: float,
     factor_weights: Dict[str, float],
-    prototype_signal_decay_2026: float = 0.55,
+    prototype_signal_decay_2026: Optional[float] = None,
 ) -> ValuationResult:
-    """Berkus (2016) method, with optional decay of the prototype factor."""
+    """Berkus (2016) method, with optional decay of the prototype factor.
+
+    Defaults (decay and low/high bands) come from
+    config/parameters.yaml under `valuation`.
+    """
+    v = _v()
+    if prototype_signal_decay_2026 is None:
+        prototype_signal_decay_2026 = float(v["berkus_prototype_signal_decay_2026"])
+    low_band = float(v["berkus_low_band_factor"])
+    high_band = float(v["berkus_high_band_factor"])
+
     components = {}
     for f in ["sound_idea", "prototype", "quality_team",
               "strategic_relationships", "product_rollout"]:
@@ -55,8 +71,8 @@ def berkus_valuation(
     return ValuationResult(
         method="berkus",
         point_estimate_usd=total,
-        low_usd=total * 0.7,
-        high_usd=total * 1.3,
+        low_usd=total * low_band,
+        high_usd=total * high_band,
         components=components,
         notes=f"Prototype factor decay applied: {prototype_signal_decay_2026:.2f}",
     )
@@ -75,11 +91,14 @@ def vc_method_valuation(
     discounted = exit_value / discount_factor
     post_money = discounted * (1.0 - expected_dilution)
 
+    v = _v()
+    low_band = float(v["vc_method_low_band_factor"])
+    high_band = float(v["vc_method_high_band_factor"])
     return ValuationResult(
         method="vc_method",
         point_estimate_usd=post_money,
-        low_usd=post_money * 0.6,
-        high_usd=post_money * 1.4,
+        low_usd=post_money * low_band,
+        high_usd=post_money * high_band,
         components={
             "exit_value": exit_value,
             "discount_factor": discount_factor,
@@ -122,8 +141,10 @@ def comparable_multiple_valuation(
 
 def damodaran_classical_discount(
     enterprise_value_usd: float,
-    key_person_discount_rate: float = 0.175,
+    key_person_discount_rate: Optional[float] = None,
 ) -> Tuple[float, Dict]:
+    if key_person_discount_rate is None:
+        key_person_discount_rate = float(_v()["damodaran_key_person_discount_classical"])
     """Standard Damodaran key-person discount (2009, 2017, 2023)."""
     discount_amount = enterprise_value_usd * key_person_discount_rate
     discounted = enterprise_value_usd - discount_amount
@@ -140,10 +161,17 @@ def damodaran_inverted_discount(
     enterprise_value_usd: float,
     team_layer4_share: float,
     ai_substitution_potential_layer4: float,
-    threshold_layer4_share: float = 0.55,
-    classical_discount_rate: float = 0.175,
-    max_premium_when_inverted: float = 0.15,
+    threshold_layer4_share: Optional[float] = None,
+    classical_discount_rate: Optional[float] = None,
+    max_premium_when_inverted: Optional[float] = None,
 ) -> Tuple[float, Dict]:
+    v = _v()
+    if threshold_layer4_share is None:
+        threshold_layer4_share = float(v["damodaran_inverted_threshold_layer4_share"])
+    if classical_discount_rate is None:
+        classical_discount_rate = float(v["damodaran_key_person_discount_classical"])
+    if max_premium_when_inverted is None:
+        max_premium_when_inverted = float(v["damodaran_inverted_max_premium"])
     """Inverted key-person discount (de Miranda Neto, 2026, section 6.4).
 
     Logic:
@@ -197,10 +225,17 @@ def damodaran_full_valuation(
     team_layer4_share: float,
     ai_substitution_potential_layer4: float,
     use_inverted_discount: bool = True,
-    threshold_layer4_share: float = 0.55,
-    classical_discount_rate: float = 0.175,
-    max_premium_when_inverted: float = 0.15,
+    threshold_layer4_share: Optional[float] = None,
+    classical_discount_rate: Optional[float] = None,
+    max_premium_when_inverted: Optional[float] = None,
 ) -> ValuationResult:
+    v = _v()
+    if threshold_layer4_share is None:
+        threshold_layer4_share = float(v["damodaran_inverted_threshold_layer4_share"])
+    if classical_discount_rate is None:
+        classical_discount_rate = float(v["damodaran_key_person_discount_classical"])
+    if max_premium_when_inverted is None:
+        max_premium_when_inverted = float(v["damodaran_inverted_max_premium"])
     """Full Damodaran-style DCF + key-person discount (classical or inverted)."""
     pv = 0.0
     for t, rev in enumerate(revenue_projection_usd, start=1):
@@ -224,11 +259,13 @@ def damodaran_full_valuation(
     components["pv_explicit"] = pv
     components["pv_terminal"] = pv_terminal
 
+    low_band = float(v["damodaran_low_band_factor"])
+    high_band = float(v["damodaran_high_band_factor"])
     return ValuationResult(
         method=("damodaran_inverted" if use_inverted_discount else "damodaran_classical"),
         point_estimate_usd=adjusted,
-        low_usd=adjusted * 0.65,
-        high_usd=adjusted * 1.35,
+        low_usd=adjusted * low_band,
+        high_usd=adjusted * high_band,
         components=components,
         notes=(f"Regime: {components.get('regime', 'classical')}; "
                f"sign: {components['sign']}"),

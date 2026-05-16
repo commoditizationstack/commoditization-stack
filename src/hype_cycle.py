@@ -17,6 +17,8 @@ from dataclasses import dataclass
 from typing import Dict, List, Tuple
 import numpy as np
 
+from . import config
+
 
 def classical_hype_curve(
     n_quarters: int,
@@ -35,9 +37,10 @@ def classical_hype_curve(
     t = np.arange(n_quarters + 1)
     y = np.zeros_like(t, dtype=float)
 
-    # ramp up to peak
+    # ramp up to peak (exponent from config.structural)
+    rise_exp = float(config.structural()["classical_hype_rise_exponent"])
     rise_mask = t <= peak_quarter
-    y[rise_mask] = peak_height * (t[rise_mask] / peak_quarter) ** 1.5
+    y[rise_mask] = peak_height * (t[rise_mask] / peak_quarter) ** rise_exp
 
     # decline to trough
     decline_mask = (t > peak_quarter) & (t <= trough_quarter)
@@ -86,9 +89,10 @@ def post_genai_double_valley_curve(
     t = np.arange(n_quarters + 1)
     y = np.zeros_like(t, dtype=float)
 
-    # phase 1: ramp to peak
+    # phase 1: ramp to peak (exponent from config.structural)
+    rise_exp = float(config.structural()["post_genai_hype_rise_exponent"])
     m1 = t <= peak_quarter
-    y[m1] = peak_height * (t[m1] / peak_quarter) ** 1.3
+    y[m1] = peak_height * (t[m1] / peak_quarter) ** rise_exp
 
     # phase 2: classical valley
     m2 = (t > peak_quarter) & (t <= trough_quarter)

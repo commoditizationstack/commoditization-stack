@@ -42,6 +42,8 @@ from dataclasses import dataclass, field
 from typing import Dict, Optional, Tuple
 import numpy as np
 
+from . import config
+
 
 @dataclass
 class JurisdictionParameters:
@@ -69,46 +71,24 @@ class JurisdictionParameters:
     notes: str = ""
 
 
-# Reference jurisdictions — defaults are documented orders of magnitude,
-# editable via YAML.
-JURISDICTION_DEFAULTS: Dict[str, JurisdictionParameters] = {
-    "brazil": JurisdictionParameters(
-        name="Brazil (CLT)",
-        labor_cost_multiplier=1.80,
-        termination_cost_fraction=0.25,
-        ai_service_overhead=1.30,
-        notice_period_fraction=0.083,  # 1 month / 12
-        ai_opex_deductibility=1.0,
-        vendor_risk_wacc_premium=0.005,
-        notes="CLT encargos: 70-90% on top of gross salary. Imported SaaS: "
-              "IRRF 15% + CIDE 10% + PIS/COFINS-importacao 9.25%. "
-              "Termination: rescissao + FGTS multa 40% + aviso previo.",
-    ),
-    "france": JurisdictionParameters(
-        name="France (CDI)",
-        labor_cost_multiplier=1.42,
-        termination_cost_fraction=0.40,
-        ai_service_overhead=1.20,
-        notice_period_fraction=0.167,  # 2 months
-        ai_opex_deductibility=1.0,
-        vendor_risk_wacc_premium=0.005,
-        notes="Charges patronales: 42-45% sur salaire brut. CDI termination "
-              "rigide: indemnite de licenciement + preavis. Imported non-EU "
-              "SaaS subject to TVA-importation 20%.",
-    ),
-    "united_states": JurisdictionParameters(
-        name="United States (W-2)",
-        labor_cost_multiplier=1.25,
-        termination_cost_fraction=0.10,
-        ai_service_overhead=1.00,
-        notice_period_fraction=0.0,
-        ai_opex_deductibility=1.0,
-        vendor_risk_wacc_premium=0.002,
-        notes="FICA match 7.65% + FUTA 0.6% + SUTA 1-3% + workers comp + "
-              "voluntary healthcare/401k ~15-20%. At-will termination: "
-              "contractual severance only.",
-    ),
-}
+def _build_jurisdiction_defaults() -> Dict[str, JurisdictionParameters]:
+    """Hydrate JurisdictionParameters instances from the YAML config."""
+    out: Dict[str, JurisdictionParameters] = {}
+    for slug, raw in config.jurisdiction_defaults().items():
+        out[slug] = JurisdictionParameters(
+            name=str(raw["name"]),
+            labor_cost_multiplier=float(raw["labor_cost_multiplier"]),
+            termination_cost_fraction=float(raw["termination_cost_fraction"]),
+            ai_service_overhead=float(raw["ai_service_overhead"]),
+            notice_period_fraction=float(raw.get("notice_period_fraction", 0.0)),
+            ai_opex_deductibility=float(raw.get("ai_opex_deductibility", 1.0)),
+            vendor_risk_wacc_premium=float(raw.get("vendor_risk_wacc_premium", 0.005)),
+            notes=str(raw.get("notes", "")),
+        )
+    return out
+
+
+JURISDICTION_DEFAULTS: Dict[str, JurisdictionParameters] = _build_jurisdiction_defaults()
 
 
 @dataclass
@@ -135,9 +115,14 @@ def compute_accounting_substitution(
     avg_base_salary_usd: float,
     annual_ai_cost_per_replaced_employee_usd: float,
     jurisdiction: JurisdictionParameters,
-    discount_rate: float = 0.12,
-    horizon_years: int = 5,
+    discount_rate: Optional[float] = None,
+    horizon_years: Optional[int] = None,
 ) -> AccountingSubstitutionResult:
+    j_cfg = config.load_parameters()["jurisdictions"]
+    if discount_rate is None:
+        discount_rate = float(j_cfg["default_discount_rate"])
+    if horizon_years is None:
+        horizon_years = int(j_cfg["default_horizon_years"])
     """Compute the net present value of substituting in-house labor with AI services
     in a given jurisdiction.
 
@@ -226,11 +211,23 @@ def jurisdictional_inverted_discount(
     avg_base_salary_usd: float,
     annual_ai_cost_per_replaced_employee_usd: float,
     jurisdiction: JurisdictionParameters,
-    threshold_layer4_share: float = 0.55,
-    classical_discount_rate: float = 0.175,
-    discount_rate: float = 0.12,
-    horizon_years: int = 5,
+    threshold_layer4_share: Optional[float] = None,
+    classical_discount_rate: Optional[float] = None,
+    discount_rate: Optional[float] = None,
+    horizon_years: Optional[int] = None,
 ) -> Tuple[float, Dict]:
+    v_cfg = config.load_parameters()["valuation"]
+    j_cfg = config.load_parameters()["jurisdictions"]
+    if threshold_layer4_share is None:
+        threshold_layer4_share = float(v_cfg["damodaran_inverted_threshold_layer4_share"])
+    if classical_discount_rate is None:
+        classical_discount_rate = float(v_cfg["damodaran_key_person_discount_classical"])
+    if discount_rate is None:
+        discount_rate = float(j_cfg["default_discount_rate"])
+    if horizon_years is None:
+        horizon_years = int(j_cfg["default_horizon_years"])
+    min_substitution_for_inversion = float(
+        v_cfg["damodaran_inversion_min_substitution_potential"])
     """Jurisdictionally-aware inverted key-person discount (de Miranda Neto, 2026,
     section 6.5).
 
@@ -253,7 +250,8 @@ def jurisdictional_inverted_discount(
     threshold_excess = above_threshold / max(1e-6, 1.0 - threshold_layer4_share)
     inversion_intensity = threshold_excess * ai_substitution_potential_layer4
 
-    if team_layer4_share <= threshold_layer4_share or ai_substitution_potential_layer4 < 0.3:
+    if (team_layer4_share <= threshold_layer4_share
+            or ai_substitution_potential_layer4 < min_substitution_for_inversion):
         # Classical regime: standard downward discount.
         adjustment = -enterprise_value_usd * classical_discount_rate
         adjusted = enterprise_value_usd + adjustment

@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+from . import config as _global_config
 from .stack_layers import KnowledgeStack
 from .startup import Startup
 from .investor import Investor
@@ -109,17 +110,24 @@ def run_single_simulation(
     n_months = int(config["simulation"]["time_horizon_quarters"]) * 3
     sub_trajectory = build_substitutability_trajectory(stack, n_months, rng)
 
-    # Realistic funding rounds, scaled to sector burn-rate
-    # Series A around month 12, Series B around month 24, Series C around month 36 if needed
+    # Realistic funding rounds, scaled to sector burn-rate. All knobs in
+    # config/parameters.yaml under startup.funding_events and startup.market_size_usd.
     base_burn = startup.monthly_burn(startup.initial_team_size)
-    series_a = max(4_000_000, base_burn * 18)
-    series_b = max(12_000_000, base_burn * 30)
-    series_c = max(25_000_000, base_burn * 36)
-    funding_events = {12: series_a, 24: series_b, 36: series_c}
+    startup_cfg_full = _global_config.load_parameters()["startup"]
+    fe = startup_cfg_full["funding_events"]
+    series_a = max(float(fe["series_a_min_usd"]), base_burn * float(fe["series_a_burn_multiplier"]))
+    series_b = max(float(fe["series_b_min_usd"]), base_burn * float(fe["series_b_burn_multiplier"]))
+    series_c = max(float(fe["series_c_min_usd"]), base_burn * float(fe["series_c_burn_multiplier"]))
+    funding_events = {
+        int(fe["series_a_month"]): series_a,
+        int(fe["series_b_month"]): series_b,
+        int(fe["series_c_month"]): series_c,
+    }
+    market_size_usd = float(startup_cfg_full.get("market_size_usd", 2_000_000_000))
 
     states = startup.run(
         n_months=n_months,
-        market_size_usd=2_000_000_000,
+        market_size_usd=market_size_usd,
         layer4_substitutability_trajectory=sub_trajectory,
         funding_events=funding_events,
         rng=rng,

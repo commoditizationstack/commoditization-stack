@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from typing import Dict, Optional
 import numpy as np
 
+from . import config
 from .valuation import (
     berkus_valuation,
     vc_method_valuation,
@@ -69,8 +70,12 @@ class Investor:
         All inputs in [0, 1] except market_size_usd and traction_arr_usd which are
         normalized internally with log-transform.
         """
-        ms_score = float(np.clip(np.log10(max(market_size_usd, 1e6)) / 11.0, 0, 1))
-        tr_score = float(np.clip(np.log10(max(traction_arr_usd + 1, 1)) / 8.0, 0, 1))
+        sc = config.load_parameters()["investor"]["scoring"]
+        ms_divisor = float(sc["market_size_log_divisor"])
+        tr_divisor = float(sc["traction_log_divisor"])
+        ms_floor = float(sc["market_size_floor_usd"])
+        ms_score = float(np.clip(np.log10(max(market_size_usd, ms_floor)) / ms_divisor, 0, 1))
+        tr_score = float(np.clip(np.log10(max(traction_arr_usd + 1, 1)) / tr_divisor, 0, 1))
 
         scores = {
             "team_quality": team_quality,
@@ -120,16 +125,22 @@ class Investor:
 
         # Damodaran with classical and inverted discount
         # Build a 5y projection from current ARR with a typical SaaS curve
+        g = config.load_parameters()["startup"]["growth"]
+        proj_growth = float(g["saas_projection_growth_rate"])
+        min_arr = float(g["min_arr_for_saas_phase_usd"])
+        terminal_growth = float(valuation_cfg.get(
+            "damodaran_full_terminal_growth",
+            config.load_parameters()["valuation"]["damodaran_full_terminal_growth"]))
         proj = []
-        cur = max(startup_arr_usd, 1_000_000)
+        cur = max(startup_arr_usd, min_arr)
         for _ in range(5):
-            cur = cur * 1.6
+            cur = cur * proj_growth
             proj.append(cur)
 
         results["damodaran_classical"] = damodaran_full_valuation(
             revenue_projection_usd=proj,
             discount_rate=self.target_irr,
-            terminal_growth=0.03,
+            terminal_growth=terminal_growth,
             terminal_multiple=exit_multiple,
             team_layer4_share=team_layer4_share,
             ai_substitution_potential_layer4=ai_substitution_potential_layer4,
@@ -141,7 +152,7 @@ class Investor:
         results["damodaran_inverted"] = damodaran_full_valuation(
             revenue_projection_usd=proj,
             discount_rate=self.target_irr,
-            terminal_growth=0.03,
+            terminal_growth=terminal_growth,
             terminal_multiple=exit_multiple,
             team_layer4_share=team_layer4_share,
             ai_substitution_potential_layer4=ai_substitution_potential_layer4,
@@ -161,8 +172,12 @@ class Investor:
         thesis_score: float,
         proposed_valuation_usd: float,
         target_valuation_usd: float,
-        decision_threshold: float = 0.55,
+        decision_threshold: Optional[float] = None,
     ) -> InvestmentDecision:
+        inv_cfg = config.load_parameters()["investor"]
+        if decision_threshold is None:
+            decision_threshold = float(inv_cfg["decision_threshold"])
+        overpriced_mult = float(inv_cfg["overpriced_negotiation_multiple"])
         if thesis_score < decision_threshold:
             return InvestmentDecision(
                 decision="pass",
@@ -171,13 +186,13 @@ class Investor:
                 method_used="thesis_score",
                 notes=f"Score {thesis_score:.2f} below threshold {decision_threshold:.2f}",
             )
-        if proposed_valuation_usd > 1.5 * target_valuation_usd:
+        if proposed_valuation_usd > overpriced_mult * target_valuation_usd:
             return InvestmentDecision(
                 decision="negotiate",
                 confidence=thesis_score,
                 target_valuation_usd=target_valuation_usd,
                 method_used="valuation_gap",
-                notes="Proposed valuation > 1.5x target.",
+                notes=f"Proposed valuation > {overpriced_mult:.1f}x target.",
             )
         return InvestmentDecision(
             decision="invest",
