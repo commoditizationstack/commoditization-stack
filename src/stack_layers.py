@@ -4,7 +4,7 @@ All seven layers of the framework introduced in Section 4 of the working paper
 "The Cost Gradient of the Build" (de Miranda Neto, 2026) are implemented in this single
 module. Layers 1 through 6 are the empirically grounded core; Layer 7
 (cross-border knowledge regime) is offered as a tentative hypothesis in
-Section 4.7 and is implemented at the end of this module via
+Section 4.1 and is implemented at the end of this module via
 KnowledgeRegimeParameters, KNOWLEDGE_REGIME_DEFAULTS,
 apply_knowledge_regime_modulation, and crossborder_acquisition_friction.
 
@@ -162,7 +162,7 @@ class KnowledgeStack:
 #
 # This section implements Layer 7 of the seven-layer framework, integrated
 # directly into stack_layers.py. The layer is offered as a tentative hypothesis
-# in Section 4.7 of the paper (de Miranda Neto, 2026) and captures the regime
+# in Section 4.1 of the paper (de Miranda Neto, 2026) and captures the regime
 # under which codified knowledge produced in one jurisdiction is computationally
 # accessible in another.
 #

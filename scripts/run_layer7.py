@@ -84,7 +84,7 @@ def make_fig14_knowledge_regime_geometry():
     ax1.set_xlabel("Knowledge-integration coefficient K\u2087", fontsize=11)
     ax1.set_ylabel("Effective Layer-4 substitutability", fontsize=11)
     ax1.set_title("Panel A. Layer-4 commoditization under varying K\u2087\n"
-                  "(seven-layer framework, Section 4.7)",
+                  "(seven-layer framework, Section 4.1)",
                   fontsize=11, fontweight="bold")
     ax1.grid(True, linestyle=":", alpha=0.5)
     ax1.set_axisbelow(True)
