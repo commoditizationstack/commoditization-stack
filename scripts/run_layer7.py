@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from src import config
 from src.jurisdictional import (
     JURISDICTION_DEFAULTS,
     compute_accounting_substitution,
@@ -47,11 +48,21 @@ def make_fig14_knowledge_regime_geometry():
     frontier models within a bloc have less than complete access to the
     relevant corpora.
     """
-    K7_values = np.linspace(0, 1, 101)
-    baseline_substitutability = 0.70  # baseline at K7=1.0
+    geom = config.sweeps()["layer7_geometry"]
+    grid = config.sweeps()["layer7_k_grid"]
+    n_points = int(geom["k_n"])
+    K7_values = np.linspace(float(grid["k_min"]), float(grid["k_max"]), n_points)
+    baseline_substitutability = float(
+        config.load_parameters()["stack_layers"]
+        ["layer_4_codified_synthesis"]["substitutability_2026"])
+    bias_slope = float(geom["layer5_bias_slope"])
+    bias_intercept = float(geom["layer5_bias_intercept"])
+    bias_floor = float(config.load_parameters()["knowledge_regimes"]
+                       ["layer5_judgment_bias_factor_floor"])
 
     layer4_effective = K7_values * baseline_substitutability
-    layer5_relative_value = 1.0 / np.maximum(0.1, K7_values * 0.85 + 0.15)
+    layer5_relative_value = 1.0 / np.maximum(
+        bias_floor, K7_values * bias_slope + bias_intercept)
 
     fig, axes = plt.subplots(1, 2, figsize=(13, 5.5))
 
@@ -84,7 +95,7 @@ def make_fig14_knowledge_regime_geometry():
     for k, label, color in [(1.0, "K\u2087=1.0", "#1b7837"),
                              (0.7, "K\u2087=0.7", "#fdb462"),
                              (0.4, "K\u2087=0.4", "#762a83")]:
-        y = 1.0 / max(0.1, k * 0.85 + 0.15)
+        y = 1.0 / max(bias_floor, k * bias_slope + bias_intercept)
         ax2.plot([k], [y], 'o', color=color, markersize=10)
         ax2.annotate(label, (k, y), xytext=(k - 0.04, y + 0.10),
                      fontsize=10, ha="right", color=color, fontweight="bold")

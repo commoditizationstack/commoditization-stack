@@ -475,6 +475,11 @@ sweeps:
     k_min: 0.0
     k_max: 1.0
     k_n: 21
+  layer7_geometry:
+    # fig14 grid resolution + Layer-5 bias formula 1 / max(floor, slope*K + intercept)
+    k_n: 101
+    layer5_bias_slope: 0.85
+    layer5_bias_intercept: 0.15
   notebook_layer3_sweep:
     ai_substitution_min: 0.10
     ai_substitution_max: 0.95

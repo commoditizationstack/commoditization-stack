@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from src import config
 from src.valuation_two_phase import (
     PhaseParameters,
     two_phase_capm,
@@ -34,63 +35,52 @@ FIG_DIR.mkdir(parents=True, exist_ok=True)
 TABLE_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
-# Calibration: NeuroCertify (HIT, deep-tech, defensibility-rich)
+# Firm calibrations and macro come from config/parameters.yaml
+# (section firms_appendix_b). NeuroCertify is defensibility-rich (Layer 6
+# protects); DataFlow Pro is Layer-4-heavy (severe second-valley beta jump).
+# Damodaran (Jan 2026) industry data: HIT unlevered beta 0.99 D/E 15.74% tax 6.38%;
+# Software (S&A) unlevered beta 1.23 D/E 5.58% tax 5.51%.
 # ---------------------------------------------------------------------------
-# Damodaran (Jan 2026): Heathcare Information and Technology
-#   unlevered beta 0.99, D/E 15.74%, tax 6.38%
-# NeuroCertify is defensibility-rich: Layer 6 protects against the
-# second valley, so beta jump in Phase 2 is muted (β=1.10 vs 0.85 base).
 
-NEUROCERTIFY_PHASES = PhaseParameters(
-    phase_1_end_year=2,
-    phase_2_end_year=4,
-    beta_unlevered_phase_1=0.85,   # below industry average: regulated, slow growth
-    beta_unlevered_phase_2=1.10,   # mild bump: Layer 6 protects
-    beta_unlevered_phase_3=0.99,   # back to industry average on terminal
-    de_ratio_phase_1=0.05,
-    de_ratio_phase_2=0.12,         # bridge debt during regulatory ramp
-    de_ratio_phase_3=0.16,         # terminal closer to industry D/E (15.74%)
-    kd_spread_phase_1=0.025,
-    kd_spread_phase_2=0.045,
-    kd_spread_phase_3=0.035,
-    effective_tax_rate=0.0638,
-)
+_FIRMS = config.firms_appendix_b()
 
-NEUROCERTIFY_FCF = [-1_500_000, -800_000, 1_200_000, 5_500_000, 12_000_000]
-NEUROCERTIFY_INVESTED_CAPITAL = [1_500_000, 2_500_000, 4_000_000, 7_000_000, 12_000_000]
-NEUROCERTIFY_NOPAT = [-1_400_000, -700_000, 1_300_000, 5_600_000, 12_500_000]
 
-# ---------------------------------------------------------------------------
-# Calibration: DataFlow Pro (Software S&A, commoditizing)
-# ---------------------------------------------------------------------------
-# Damodaran (Jan 2026): Software (System & Application)
-#   unlevered beta 1.23, D/E 5.58%, tax 5.51%
-# DataFlow Pro: Layer-4-heavy, weak Layer 6. Second-valley beta jump is
-# severe (β=1.50). Capital structure shifts: forced bridge debt in Phase 2.
+def _phases_from_yaml(slug: str) -> PhaseParameters:
+    p = _FIRMS[slug]["phases"]
+    return PhaseParameters(
+        phase_1_end_year=int(p["phase_1_end_year"]),
+        phase_2_end_year=int(p["phase_2_end_year"]),
+        beta_unlevered_phase_1=float(p["beta_unlevered_phase_1"]),
+        beta_unlevered_phase_2=float(p["beta_unlevered_phase_2"]),
+        beta_unlevered_phase_3=float(p["beta_unlevered_phase_3"]),
+        de_ratio_phase_1=float(p["de_ratio_phase_1"]),
+        de_ratio_phase_2=float(p["de_ratio_phase_2"]),
+        de_ratio_phase_3=float(p["de_ratio_phase_3"]),
+        kd_spread_phase_1=float(p["kd_spread_phase_1"]),
+        kd_spread_phase_2=float(p["kd_spread_phase_2"]),
+        kd_spread_phase_3=float(p["kd_spread_phase_3"]),
+        effective_tax_rate=float(p["effective_tax_rate"]),
+    )
 
-DATAFLOW_PHASES = PhaseParameters(
-    phase_1_end_year=2,
-    phase_2_end_year=4,
-    beta_unlevered_phase_1=1.10,
-    beta_unlevered_phase_2=1.50,   # severe bump: AI agents close the gap
-    beta_unlevered_phase_3=1.23,   # back to industry average on terminal
-    de_ratio_phase_1=0.04,
-    de_ratio_phase_2=0.15,         # forced bridge debt during second valley
-    de_ratio_phase_3=0.06,         # back near industry D/E (5.58%)
-    kd_spread_phase_1=0.03,
-    kd_spread_phase_2=0.08,        # spread widens significantly
-    kd_spread_phase_3=0.04,
-    effective_tax_rate=0.0551,
-)
 
-DATAFLOW_FCF = [-1_200_000, 800_000, -200_000, 4_000_000, 9_500_000]
-DATAFLOW_INVESTED_CAPITAL = [1_200_000, 2_000_000, 3_500_000, 6_000_000, 10_000_000]
-DATAFLOW_NOPAT = [-1_100_000, 900_000, -100_000, 4_100_000, 9_800_000]
+NEUROCERTIFY_PHASES = _phases_from_yaml("neurocertify")
+NEUROCERTIFY_FCF = list(_FIRMS["neurocertify"]["fcf_usd"])
+NEUROCERTIFY_INVESTED_CAPITAL = list(_FIRMS["neurocertify"]["invested_capital_usd"])
+NEUROCERTIFY_NOPAT = list(_FIRMS["neurocertify"]["nopat_usd"])
+NEUROCERTIFY_LABEL = str(_FIRMS["neurocertify"]["label"])
+NEUROCERTIFY_DRAG = float(_FIRMS["neurocertify"]["second_valley_drag"])
 
-# Common macro
-RF = 0.0425
-ERP = 0.055
-TERMINAL_GROWTH = 0.03
+DATAFLOW_PHASES = _phases_from_yaml("dataflow")
+DATAFLOW_FCF = list(_FIRMS["dataflow"]["fcf_usd"])
+DATAFLOW_INVESTED_CAPITAL = list(_FIRMS["dataflow"]["invested_capital_usd"])
+DATAFLOW_NOPAT = list(_FIRMS["dataflow"]["nopat_usd"])
+DATAFLOW_LABEL = str(_FIRMS["dataflow"]["label"])
+DATAFLOW_DRAG = float(_FIRMS["dataflow"]["second_valley_drag"])
+
+# Common macro (from YAML)
+RF = float(_FIRMS["macro"]["risk_free_rate"])
+ERP = float(_FIRMS["macro"]["equity_risk_premium"])
+TERMINAL_GROWTH = float(_FIRMS["macro"]["terminal_growth"])
 
 
 def run_company(name: str, phases: PhaseParameters, fcf, ic, nopat,
@@ -284,10 +274,10 @@ def main():
     print("\nRunning Appendix B - Two-phase reformulation\n" + "="*60)
 
     neurocertify = run_company(
-        "NeuroCertify (deep-tech, HIT)",
+        NEUROCERTIFY_LABEL,
         NEUROCERTIFY_PHASES,
         NEUROCERTIFY_FCF, NEUROCERTIFY_INVESTED_CAPITAL, NEUROCERTIFY_NOPAT,
-        TERMINAL_GROWTH, second_valley_drag=0.05,
+        TERMINAL_GROWTH, second_valley_drag=NEUROCERTIFY_DRAG,
     )
     print(f"\nNeuroCertify two-phase DCF EV: ${neurocertify['dcf']['enterprise_value']:,.0f}")
     print(f"NeuroCertify Phase 1 WACC: {neurocertify['yearly'][0]['wacc']*100:.2f}%")
@@ -296,10 +286,10 @@ def main():
     print(f"NeuroCertify classical single-WACC: {neurocertify['classical_wacc']*100:.2f}%")
 
     dataflow = run_company(
-        "DataFlow Pro (Software, commoditizing)",
+        DATAFLOW_LABEL,
         DATAFLOW_PHASES,
         DATAFLOW_FCF, DATAFLOW_INVESTED_CAPITAL, DATAFLOW_NOPAT,
-        TERMINAL_GROWTH, second_valley_drag=0.30,
+        TERMINAL_GROWTH, second_valley_drag=DATAFLOW_DRAG,
     )
     print(f"\nDataFlow Pro two-phase DCF EV: ${dataflow['dcf']['enterprise_value']:,.0f}")
     print(f"DataFlow Pro Phase 1 WACC: {dataflow['yearly'][0]['wacc']*100:.2f}%")

@@ -25,6 +25,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
+from src import config
 from src.simulation import load_scenario, run_single_simulation
 from src.stack_layers import KnowledgeStack
 from src.valuation import (
@@ -135,19 +136,35 @@ def figure_2_substitutability_trajectories(config, outdir):
     print(f"  saved: fig2_substitutability_trajectories.png")
 
 
-def figure_3_inverted_keyperson_heatmap(config, outdir):
-    """Heatmap: discount sign as a function of layer-4 share x AI substitution."""
-    layer4_shares = np.linspace(0.20, 0.90, 36)
-    ai_potentials = np.linspace(0.05, 0.95, 36)
-    threshold = float(config["valuation"]["damodaran_inverted_threshold_layer4_share"])
-    classical_rate = float(config["valuation"]["damodaran_key_person_discount_classical"])
-    max_premium = float(config["valuation"]["damodaran_inverted_max_premium"])
+def figure_3_inverted_keyperson_heatmap(scenario_cfg, outdir):
+    """Heatmap: discount sign as a function of layer-4 share x AI substitution.
+
+    Sweep grid and color limits come from
+    config/parameters.yaml under sweeps.inverted_keyperson_heatmap.
+    """
+    sw = config.sweeps()["inverted_keyperson_heatmap"]
+    layer4_shares = np.linspace(
+        float(sw["team_layer4_share_min"]),
+        float(sw["team_layer4_share_max"]),
+        int(sw["team_layer4_share_n"]),
+    )
+    ai_potentials = np.linspace(
+        float(sw["ai_substitution_min"]),
+        float(sw["ai_substitution_max"]),
+        int(sw["ai_substitution_n"]),
+    )
+    ev_usd = float(sw["enterprise_value_usd"])
+    vmin_pct = float(sw["color_vmin_pct"])
+    vmax_pct = float(sw["color_vmax_pct"])
+    threshold = float(scenario_cfg["valuation"]["damodaran_inverted_threshold_layer4_share"])
+    classical_rate = float(scenario_cfg["valuation"]["damodaran_key_person_discount_classical"])
+    max_premium = float(scenario_cfg["valuation"]["damodaran_inverted_max_premium"])
 
     Z = np.zeros((len(ai_potentials), len(layer4_shares)))
     for i, ai in enumerate(ai_potentials):
         for j, l4 in enumerate(layer4_shares):
             _, comp = damodaran_inverted_discount(
-                enterprise_value_usd=100_000_000,
+                enterprise_value_usd=ev_usd,
                 team_layer4_share=l4,
                 ai_substitution_potential_layer4=ai,
                 threshold_layer4_share=threshold,
@@ -160,7 +177,7 @@ def figure_3_inverted_keyperson_heatmap(config, outdir):
     im = ax.imshow(Z, aspect="auto", origin="lower",
                    extent=(layer4_shares.min(), layer4_shares.max(),
                            ai_potentials.min(), ai_potentials.max()),
-                   cmap="RdBu_r", vmin=-15, vmax=20)
+                   cmap="RdBu_r", vmin=vmin_pct, vmax=vmax_pct)
     ax.contour(layer4_shares, ai_potentials, Z, levels=[0],
                colors="black", linewidths=2, linestyles="--")
     ax.axvline(threshold, color="white", linewidth=1, linestyle=":", alpha=0.7)
