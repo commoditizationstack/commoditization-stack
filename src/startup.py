@@ -17,6 +17,12 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 import numpy as np
 
+from . import config
+
+
+def _growth() -> Dict:
+    return config.load_parameters()["startup"]["growth"]
+
 
 @dataclass
 class StartupState:
@@ -94,19 +100,23 @@ class Startup:
         layer4_substitutability: float,
         rng: Optional[np.random.Generator] = None,
         new_funding_usd: float = 0.0,
-        team_growth_per_month: float = 0.05,
+        team_growth_per_month: Optional[float] = None,
         ai_team_optimization: bool = True,
     ) -> StartupState:
         if not prev.is_alive:
             return prev
 
+        g = _growth()
+        if team_growth_per_month is None:
+            team_growth_per_month = float(g["team_growth_per_month"])
+
         # Team grows only when revenue is increasing or funding came in
         cash_runway_months = prev.cash_usd / max(self.monthly_burn(prev.team_size), 1.0)
-        # More conservative: require at least 10 months runway AND cap absolute team size
-        can_grow = (cash_runway_months > 10.0) or (new_funding_usd > 0)
-        # Cap on absolute team size: 6x initial team is a reasonable hyper-growth ceiling
-        max_team_size = self.initial_team_size * 6
-        effective_team_growth = team_growth_per_month if (can_grow and prev.team_size < max_team_size) else 0.0
+        can_grow = (cash_runway_months > float(g["runway_months_before_team_can_grow"])
+                    ) or (new_funding_usd > 0)
+        max_team_size = self.initial_team_size * int(g["max_team_size_multiplier"])
+        effective_team_growth = team_growth_per_month if (
+            can_grow and prev.team_size < max_team_size) else 0.0
         team_size = prev.team_size * (1 + effective_team_growth)
         team_size = min(team_size, max_team_size)
 
@@ -127,31 +137,37 @@ class Startup:
         # Pre-revenue: while TRL < 6, no real revenue
         # Once TRL >= 6: ARR ramps from a base proportional to team size
         # Then once ARR > threshold: compounding growth with churn
+        seed_threshold = float(g["seed_arr_threshold_usd"])
+        seed_per_eng = float(g["seed_arr_per_engineer_month_usd"])
+        seed_noise = float(g["seed_growth_noise_sigma"])
+        base_growth = float(g["base_saas_growth_rate"])
+        base_noise = float(g["base_growth_noise_sigma"])
+        revenue_factor = float(g["revenue_to_monthly_factor"])
+        trl_growth_rate = float(g["trl_growth_per_month"])
+
         if prev.trl < 6.0:
             new_arr = 0.0
-        elif prev.arr_usd < 50_000:
-            # initial customer acquisition phase: a few logos per quarter
-            seed_growth = team_size * 800.0  # ~$800 ARR per engineer-month early
+        elif prev.arr_usd < seed_threshold:
+            seed_growth = team_size * seed_per_eng
             if rng is not None:
-                seed_growth *= float(np.exp(rng.normal(0, 0.20)))
+                seed_growth *= float(np.exp(rng.normal(0, seed_noise)))
             new_arr = prev.arr_usd + seed_growth
         else:
-            # compounding SaaS growth with churn
-            base_growth_rate = 0.10
+            base_growth_rate = base_growth
             if rng is not None:
-                base_growth_rate *= float(np.exp(rng.normal(0, 0.10)))
+                base_growth_rate *= float(np.exp(rng.normal(0, base_noise)))
             market_penetration = prev.arr_usd / max(market_size_usd, 1.0)
             growth_rate = base_growth_rate * max(0.0, 1.0 - market_penetration)
             churn_loss = prev.arr_usd * self.churn_monthly
             new_arr = prev.arr_usd * (1 + growth_rate) - churn_loss
             new_arr = max(0.0, new_arr)
 
-        new_customers = int(new_arr / max(self.ltv_usd / 12, 1.0))
+        new_customers = int(new_arr / max(self.ltv_usd / revenue_factor, 1.0))
 
-        monthly_revenue = new_arr / 12
+        monthly_revenue = new_arr / revenue_factor
         cash = prev.cash_usd + monthly_revenue + new_funding_usd - effective_team_cost
 
-        trl_growth = 0.08 if prev.trl < self.trl_target else 0.0
+        trl_growth = trl_growth_rate if prev.trl < self.trl_target else 0.0
         trl = min(self.trl_target, prev.trl + trl_growth)
 
         is_alive = cash > 0

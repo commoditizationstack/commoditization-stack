@@ -69,6 +69,8 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 import numpy as np
 
+from . import config
+
 
 # ---------------------------------------------------------------------------
 # Phase enumeration
@@ -76,11 +78,17 @@ import numpy as np
 # Phase 1: initial growth and first valley (months 0-18 typical).
 # Phase 2: commoditization second valley (months 18-42 typical).
 # Phase 3: post-second-valley terminal trajectory (month 42+).
-# The phase boundaries are calibration choices documented at the call site.
+# Generic phase boundaries and defaults live in config/parameters.yaml
+# under valuation_two_phase.* — firm-specific calibrations are under
+# firms_appendix_b.*.
 
 PHASE_1 = "phase_1_growth"
 PHASE_2 = "phase_2_second_valley"
 PHASE_3 = "phase_3_terminal"
+
+
+def _vtp() -> Dict:
+    return config.load_parameters()["valuation_two_phase"]
 
 
 # ---------------------------------------------------------------------------
@@ -92,30 +100,30 @@ class PhaseParameters:
     """Parameters that may shift across phases of the firm's lifecycle.
 
     The classical (single-phase) CAPM/WACC arises as the special case
-    where phase_1, phase_2, and phase_3 are identical.
+    where phase_1, phase_2, and phase_3 are identical. Defaults come from
+    config/parameters.yaml under valuation_two_phase.
     """
     # Phase boundaries (year indices). Year 1 = first projected year.
-    phase_1_end_year: int = 2          # Phase 1 lasts Y1-Y2
-    phase_2_end_year: int = 4          # Phase 2 lasts Y3-Y4
-    # Phase 3 = Y5 onwards (terminal phase)
+    phase_1_end_year: int = int(_vtp()["default_phase_boundaries"]["phase_1_end_year"])
+    phase_2_end_year: int = int(_vtp()["default_phase_boundaries"]["phase_2_end_year"])
 
     # Phase-conditional unlevered betas
-    beta_unlevered_phase_1: float = 1.0
-    beta_unlevered_phase_2: float = 1.4   # commoditization elevates systematic risk
-    beta_unlevered_phase_3: float = 1.1   # partial recovery on terminal trajectory
+    beta_unlevered_phase_1: float = float(_vtp()["default_betas"]["phase_1"])
+    beta_unlevered_phase_2: float = float(_vtp()["default_betas"]["phase_2"])
+    beta_unlevered_phase_3: float = float(_vtp()["default_betas"]["phase_3"])
 
     # Phase-conditional D/E ratios (capital structure may shift)
-    de_ratio_phase_1: float = 0.05    # mostly equity-funded early stage
-    de_ratio_phase_2: float = 0.10    # bridge debt during second valley
-    de_ratio_phase_3: float = 0.20    # leverage as firm matures
+    de_ratio_phase_1: float = float(_vtp()["default_de_ratios"]["phase_1"])
+    de_ratio_phase_2: float = float(_vtp()["default_de_ratios"]["phase_2"])
+    de_ratio_phase_3: float = float(_vtp()["default_de_ratios"]["phase_3"])
 
     # Phase-conditional cost-of-debt premium above risk-free
-    kd_spread_phase_1: float = 0.03
-    kd_spread_phase_2: float = 0.06   # spread widens in second valley
-    kd_spread_phase_3: float = 0.04
+    kd_spread_phase_1: float = float(_vtp()["default_kd_spreads"]["phase_1"])
+    kd_spread_phase_2: float = float(_vtp()["default_kd_spreads"]["phase_2"])
+    kd_spread_phase_3: float = float(_vtp()["default_kd_spreads"]["phase_3"])
 
     # Effective tax rate (typically constant across phases)
-    effective_tax_rate: float = 0.25
+    effective_tax_rate: float = float(_vtp()["default_effective_tax_rate"])
 
     def beta_for_year(self, year: int) -> float:
         if year <= self.phase_1_end_year:

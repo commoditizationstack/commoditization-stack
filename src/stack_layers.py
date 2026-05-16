@@ -32,6 +32,8 @@ from dataclasses import dataclass
 from typing import Dict, List
 import numpy as np
 
+from . import config
+
 
 @dataclass
 class StackLayer:
@@ -48,12 +50,18 @@ class StackLayer:
 
         Uses bounded logistic update so substitutability stays in (0, 1).
         For positive velocity, approaches 1; for negative velocity, approaches 0.
+        Structural constants (logit scaling, clip bounds) live in
+        config/parameters.yaml under `structural`.
         """
         s0 = self.substitutability_2026
         v = self.velocity
-        s_clipped = min(max(s0, 0.01), 0.99)
+        sc = config.structural()
+        clip_lo = float(sc["substitutability_clip_min"])
+        clip_hi = float(sc["substitutability_clip_max"])
+        logit_scale = float(sc["stack_layer_logit_scaling"])
+        s_clipped = min(max(s0, clip_lo), clip_hi)
         logit_s = np.log(s_clipped / (1 - s_clipped))
-        new_logit = logit_s + v * year_offset * 2.0
+        new_logit = logit_s + v * year_offset * logit_scale
         new_s = 1.0 / (1.0 + np.exp(-new_logit))
         return float(np.clip(new_s, 0.0, 1.0))
 
@@ -111,15 +119,20 @@ class KnowledgeStack:
 
     def perturb(self, rng: np.random.Generator, cv: float = 0.20) -> "KnowledgeStack":
         """Return a perturbed copy for Monte Carlo."""
-        new_config = {}
+        sc = config.structural()
+        mc = config.load_parameters()["monte_carlo"]
+        clip_lo = float(sc["substitutability_clip_min"])
+        clip_hi = float(sc["substitutability_clip_max"])
+        sub_sigma = float(mc["substitutability_perturbation_sigma"])
+        new_config: Dict[str, dict] = {}
         for lid, layer in self.layers.items():
             sign = np.sign(layer.velocity) if layer.velocity != 0 else 1.0
             mag = abs(layer.velocity)
             mag_perturbed = mag * np.exp(rng.normal(0, cv))
             v_new = sign * mag_perturbed
             s_new = float(np.clip(
-                layer.substitutability_2026 + rng.normal(0, 0.05),
-                0.01, 0.99
+                layer.substitutability_2026 + rng.normal(0, sub_sigma),
+                clip_lo, clip_hi,
             ))
             new_config[lid] = {
                 "name": layer.name,
@@ -198,45 +211,21 @@ class KnowledgeRegimeParameters:
         return self.K_coefficient >= 0.99
 
 
-KNOWLEDGE_REGIME_DEFAULTS: Dict[str, KnowledgeRegimeParameters] = {
-    "globalized_2020": KnowledgeRegimeParameters(
-        K_coefficient=1.00,
-        bloc_assignment="globally_integrated",
-        layer4_substitution_modulator=1.00,
-        layer5_judgment_bias_factor=1.00,
-        notes="Pre-decoupling baseline. Frontier models freely accessible "
-              "across blocs; scientific corpora globally indexed; researcher "
-              "mobility unconstrained. Approximate state circa 2018-2020.",
-    ),
-    "current_2026": KnowledgeRegimeParameters(
-        K_coefficient=0.70,
-        bloc_assignment="western",
-        layer4_substitution_modulator=0.70,
-        layer5_judgment_bias_factor=0.85,
-        notes="Current estimated regime. Partial fragmentation evidenced by "
-              "Anthropic Claude Gov (Jun 2025) restricted to US national "
-              "security customers; Anthropic policy tightening (Sep 2025) "
-              "blocking Chinese-owned entities globally; Anthropic Claude "
-              "Mythos Preview (Apr 2026) released only to closed Project "
-              "Glasswing consortium; EU AI Act enforcement (Aug 2025); "
-              "collapse of EU-US Data Privacy Framework (late 2025); "
-              "CLOUD Act extraterritoriality; US-China STA renewal with "
-              "restrictions on emerging tech (Dec 2024); ASPI Critical Tech "
-              "Tracker showing peak collaboration in 2019. Illustrative "
-              "value, not estimated.",
-    ),
-    "fragmented_2030": KnowledgeRegimeParameters(
-        K_coefficient=0.40,
-        bloc_assignment="western",
-        layer4_substitution_modulator=0.40,
-        layer5_judgment_bias_factor=0.55,
-        notes="Hypothetical 2030 scenario of severe fragmentation. Frontier "
-              "models deployed only within bloc; scientific corpora subject "
-              "to dual-use restrictions; researcher mobility constrained; "
-              "data sovereignty fully enforced. Counterfactual scenario for "
-              "exploring framework sensitivity, not a forecast.",
-    ),
-}
+def _build_regime_defaults() -> Dict[str, "KnowledgeRegimeParameters"]:
+    """Hydrate KnowledgeRegimeParameters instances from the YAML config."""
+    out: Dict[str, KnowledgeRegimeParameters] = {}
+    for slug, raw in config.knowledge_regime_defaults().items():
+        out[slug] = KnowledgeRegimeParameters(
+            K_coefficient=float(raw["K_coefficient"]),
+            bloc_assignment=str(raw["bloc_assignment"]),
+            layer4_substitution_modulator=float(raw["layer4_substitution_modulator"]),
+            layer5_judgment_bias_factor=float(raw["layer5_judgment_bias_factor"]),
+            notes=str(raw.get("notes", "")),
+        )
+    return out
+
+
+KNOWLEDGE_REGIME_DEFAULTS: Dict[str, KnowledgeRegimeParameters] = _build_regime_defaults()
 
 
 def apply_knowledge_regime_modulation(
@@ -262,11 +251,13 @@ def apply_knowledge_regime_modulation(
 
       Layer 6 (institutional embedding and certification) value is unchanged.
     """
+    floor = float(config.load_parameters()["knowledge_regimes"]
+                  ["layer5_judgment_bias_factor_floor"])
     modulated_layer4 = (
         layer4_substitutability_baseline * regime.layer4_substitution_modulator
     )
     modulated_layer5 = (
-        layer5_judgment_value_baseline / max(0.1, regime.layer5_judgment_bias_factor)
+        layer5_judgment_value_baseline / max(floor, regime.layer5_judgment_bias_factor)
     )
     modulated_layer6 = layer6_institutional_value_baseline
     return modulated_layer4, modulated_layer5, modulated_layer6
@@ -287,5 +278,4 @@ def crossborder_acquisition_friction(
     """
     if target_bloc == acquirer_bloc:
         return base_substitution_potential
-    cross_bloc_friction = 0.30
-    return base_substitution_potential * (1.0 - cross_bloc_friction)
+    return base_substitution_potential * (1.0 - config.cross_border_friction())

@@ -48,25 +48,21 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Tuple, Optional
 import numpy as np
 
+from . import config
+
 
 # ---------------------------------------------------------------------------
 # TRL → discount-rate adjustment schedule
 # ---------------------------------------------------------------------------
 # Calibration grounded in Equidam (2025) and Hectelion (2025). The schedule
-# encodes the empirical observation that progressing from TRL 4 to TRL 7
-# typically reduces the discount rate by approximately 5 percentage points.
-# Values below TRL 1 and above TRL 9 are clipped to the endpoint values.
+# (TRL 1..9 → premium) lives in config/parameters.yaml under
+# valuation_layered.trl_discount_premium. Editing the YAML is the canonical
+# way to retune.
 
-TRL_DISCOUNT_PREMIUM = {
-    1: 0.16,   # basic principles observed - extreme uncertainty
-    2: 0.14,   # technology concept formulated
-    3: 0.12,   # experimental proof of concept
-    4: 0.10,   # technology validated in lab
-    5: 0.08,   # technology validated in relevant environment
-    6: 0.06,   # technology demonstrated in relevant environment
-    7: 0.04,   # system prototype demonstration in operational environment
-    8: 0.02,   # system complete and qualified
-    9: 0.00,   # actual system proven in operational environment
+TRL_DISCOUNT_PREMIUM: Dict[int, float] = {
+    int(k): float(v)
+    for k, v in config.load_parameters()["valuation_layered"]
+    ["trl_discount_premium"].items()
 }
 
 
@@ -79,8 +75,7 @@ def trl_premium(trl: int) -> float:
     with Hectelion's reported 18% → 13% trajectory under their
     Swiss medtech case.
     """
-    trl = int(np.clip(trl, 1, 9))
-    return TRL_DISCOUNT_PREMIUM[trl]
+    return config.trl_discount_premium(trl)
 
 
 # ---------------------------------------------------------------------------
@@ -95,37 +90,38 @@ def trl_premium(trl: int) -> float:
 # qualitative pattern (Layer 4 erodes value, Layer 6 protects) is
 # the substantive content.
 
+_DEFAULT_EXPOSURE = config.default_layer_exposure()
+_EXPOSURE_TOLERANCE = float(
+    config.load_parameters()["valuation_layered"]["layer_exposure_sum_tolerance"])
+
+
 @dataclass
 class LayerExposure:
-    """Fraction of firm value exposed to each layer of the framework."""
-    layer_1_infra: float = 0.05
-    layer_2_foundation: float = 0.05
-    layer_3_capability: float = 0.10
-    layer_4_codified: float = 0.30
-    layer_5_judgment: float = 0.20
-    layer_6_institutional: float = 0.20
-    layer_7_crossborder: float = 0.10
+    """Fraction of firm value exposed to each layer of the framework.
+
+    Defaults come from config/parameters.yaml under
+    valuation_layered.default_layer_exposure. Sum is validated to 1.0
+    within `layer_exposure_sum_tolerance` (also configured in YAML).
+    """
+    layer_1_infra: float = _DEFAULT_EXPOSURE["layer_1_infra"]
+    layer_2_foundation: float = _DEFAULT_EXPOSURE["layer_2_foundation"]
+    layer_3_capability: float = _DEFAULT_EXPOSURE["layer_3_capability"]
+    layer_4_codified: float = _DEFAULT_EXPOSURE["layer_4_codified"]
+    layer_5_judgment: float = _DEFAULT_EXPOSURE["layer_5_judgment"]
+    layer_6_institutional: float = _DEFAULT_EXPOSURE["layer_6_institutional"]
+    layer_7_crossborder: float = _DEFAULT_EXPOSURE["layer_7_crossborder"]
 
     def __post_init__(self) -> None:
         s = (self.layer_1_infra + self.layer_2_foundation + self.layer_3_capability +
              self.layer_4_codified + self.layer_5_judgment + self.layer_6_institutional +
              self.layer_7_crossborder)
-        if not (0.99 <= s <= 1.01):
+        if not (1.0 - _EXPOSURE_TOLERANCE <= s <= 1.0 + _EXPOSURE_TOLERANCE):
             raise ValueError(f"LayerExposure must sum to 1.0; got {s:.3f}")
 
 
-# Sign and magnitude of each layer's contribution to the firm-specific
-# risk premium, expressed as a percentage-point shift per unit exposure.
-# Positive = adds risk (commoditizing); negative = reduces risk (defensible).
-LAYER_RISK_COEFFICIENTS = {
-    "layer_1_infra":         +0.02,   # neutral to slightly positive (inference cost)
-    "layer_2_foundation":    +0.01,   # mildly positive (frontier model dependency)
-    "layer_3_capability":    +0.04,   # commoditizing (API price wars)
-    "layer_4_codified":      +0.08,   # strongly commoditizing (code, drafts, support)
-    "layer_5_judgment":      -0.04,   # anti-commoditizing (taste, theory, judgment)
-    "layer_6_institutional": -0.06,   # strongly anti-commoditizing (regulatory moat)
-    "layer_7_crossborder":   +0.00,   # neutral baseline; modulated by K7 externally
-}
+# Signed per-layer risk-premium coefficients. Source of truth:
+# config/parameters.yaml under valuation_layered.layer_risk_coefficients.
+LAYER_RISK_COEFFICIENTS = config.layer_risk_coefficients()
 
 
 def layer_decomposed_risk_premium(
@@ -143,6 +139,10 @@ def layer_decomposed_risk_premium(
     representing the marginal vendor-concentration risk that the
     paper's section 8.4 introduces.
     """
+    vl = config.load_parameters()["valuation_layered"]
+    amp_base = float(vl["layer4_substitution_amplifier_base"])
+    k7_premium_per_unit = float(vl["layer7_k_premium_per_unit"])
+
     breakdown: Dict[str, float] = {}
     breakdown["layer_1_infra"] = LAYER_RISK_COEFFICIENTS["layer_1_infra"] * exposure.layer_1_infra
     breakdown["layer_2_foundation"] = LAYER_RISK_COEFFICIENTS["layer_2_foundation"] * exposure.layer_2_foundation
@@ -151,12 +151,12 @@ def layer_decomposed_risk_premium(
     breakdown["layer_4_codified"] = (
         LAYER_RISK_COEFFICIENTS["layer_4_codified"]
         * exposure.layer_4_codified
-        * (0.5 + layer4_substitution_potential)
+        * (amp_base + layer4_substitution_potential)
     )
     breakdown["layer_5_judgment"] = LAYER_RISK_COEFFICIENTS["layer_5_judgment"] * exposure.layer_5_judgment
     breakdown["layer_6_institutional"] = LAYER_RISK_COEFFICIENTS["layer_6_institutional"] * exposure.layer_6_institutional
     # Layer 7: K7-modulated
-    layer7_k_premium = (1.0 - K7) * 0.03
+    layer7_k_premium = (1.0 - K7) * k7_premium_per_unit
     breakdown["layer_7_crossborder"] = layer7_k_premium * exposure.layer_7_crossborder
     total = sum(breakdown.values())
     return total, breakdown
@@ -406,48 +406,22 @@ def layered_dcf(
 # valuation outcomes interact with VC funding-round expectations.
 # Source: Carta State of Private Markets Q3 2025; SaaStr (Dec 2025).
 
-US_FUNDING_STAGE_BENCHMARKS = {
-    "pre_seed": {
-        "median_premoney_usd": 13_000_000,    # SAFE cap range $10-15M
-        "median_round_size_usd": 1_000_000,
-        "typical_dilution": 0.125,
-        "expected_revenue_usd": 0,
-    },
-    "seed": {
-        "median_premoney_usd": 16_000_000,
-        "median_round_size_usd": 4_000_000,
-        "typical_dilution": 0.20,
-        "expected_revenue_usd": 500_000,
-    },
-    "series_a": {
-        "median_premoney_usd": 49_300_000,
-        "median_round_size_usd": 14_000_000,
-        "typical_dilution": 0.179,
-        "expected_revenue_usd": 3_000_000,
-    },
-    "series_b": {
-        "median_premoney_usd": 118_900_000,
-        "median_round_size_usd": 40_000_000,
-        "typical_dilution": 0.129,
-        "expected_revenue_usd": 12_000_000,
-    },
-    "series_c": {
-        "median_premoney_usd": 350_000_000,
-        "median_round_size_usd": 100_000_000,
-        "typical_dilution": 0.10,
-        "expected_revenue_usd": 30_000_000,
-    },
-}
+US_FUNDING_STAGE_BENCHMARKS = config.us_funding_stage_benchmarks()
 
 
 def stage_for_valuation(enterprise_value_usd: float) -> str:
-    """Map an enterprise value to its expected funding stage band."""
-    if enterprise_value_usd < 15_000_000:
+    """Map an enterprise value to its expected funding stage band.
+
+    Thresholds in config/parameters.yaml under
+    valuation_layered.stage_thresholds_usd.
+    """
+    t = config.stage_thresholds_usd()
+    if enterprise_value_usd < float(t["pre_seed_upper"]):
         return "pre_seed"
-    if enterprise_value_usd < 32_500_000:
+    if enterprise_value_usd < float(t["seed_upper"]):
         return "seed"
-    if enterprise_value_usd < 84_000_000:
+    if enterprise_value_usd < float(t["series_a_upper"]):
         return "series_a"
-    if enterprise_value_usd < 235_000_000:
+    if enterprise_value_usd < float(t["series_b_upper"]):
         return "series_b"
     return "series_c"
