@@ -94,10 +94,12 @@ def substitution_npv_bars(*,
                             ai_cost_per_eng_year_usd: float = 12000,
                             discount_rate: float = 0.12,
                             horizon_years: int = 5,
-                            highlight_country: str = "united_states"
+                            highlight_country: str = "united_states",
+                            countries: List[str] = None,
                             ) -> plt.Figure:
-    """Bar chart of substitution NPV decomposition across three jurisdictions."""
-    countries = ["brazil", "france", "united_states"]
+    """Bar chart of substitution NPV decomposition across the selected jurisdictions."""
+    if countries is None:
+        countries = ["brazil", "france", "united_states"]
     annuity_factor = sum(1.0 / (1.0 + discount_rate) ** t
                           for t in range(1, horizon_years + 1))
 
@@ -172,9 +174,11 @@ def crossborder_basis_bars(*,
                             ai_cost_per_eng_year_usd: float = 12000,
                             discount_rate: float = 0.12,
                             horizon_years: int = 5,
+                            countries: List[str] = None,
                             ) -> plt.Figure:
     """Inversion premium as % of EV under each operating-cost basis."""
-    countries = ["brazil", "france", "united_states"]
+    if countries is None:
+        countries = ["brazil", "france", "united_states"]
     annuity_factor = sum(1.0 / (1.0 + discount_rate) ** t
                           for t in range(1, horizon_years + 1))
     premiums_pct = []
@@ -404,9 +408,12 @@ def streaming_price_decomposition(*, results: List) -> plt.Figure:
 # Appendix D.6 — Fiscal blocs 5-year decomposition
 # ---------------------------------------------------------------------------
 
-def fiscal_blocs_decomposition(blocs: Dict[str, "FiscalBlocResult"]) -> plt.Figure:
+def fiscal_blocs_decomposition(blocs: Dict[str, "FiscalBlocResult"],
+                                  countries: List[str] = None) -> plt.Figure:
     """Stacked decomposition + net impact label per bloc."""
-    countries = ["brazil", "france", "united_states"]
+    if countries is None:
+        countries = list(blocs.keys()) or ["brazil", "france", "united_states"]
+    countries = [c for c in countries if c in blocs]
 
     fig, ax = plt.subplots(figsize=(9, 5))
     x = np.arange(len(countries))

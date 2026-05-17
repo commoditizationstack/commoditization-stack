@@ -269,6 +269,24 @@ LEVER_GROUPS: List[LeverGroup] = [
                 "kind": "slider", "min": 0.0, "max": 0.10, "step": 0.005,
                 "format": "%.3f",
             },
+            {
+                "dot_path": "valuation.comparable_revenue_multiple_baseline",
+                "label": "Comparable revenue multiple — baseline",
+                "description": (
+                    "Industry-median revenue multiple used by the comparables "
+                    "valuation method (Section 6.3)."),
+                "kind": "slider", "min": 1.0, "max": 30.0, "step": 0.5,
+                "format": "%.1f",
+            },
+            {
+                "dot_path": "valuation.berkus_factor_cap_usd",
+                "label": "Berkus method — factor cap (USD)",
+                "description": (
+                    "Maximum value any single Berkus factor can contribute. "
+                    "Drives the Berkus distribution in Figure 9."),
+                "kind": "number", "min": 0.0, "max": 2_000_000.0,
+                "step": 10_000.0, "format": "%.0f",
+            },
         ],
     },
 
@@ -766,6 +784,305 @@ LEVER_GROUPS: List[LeverGroup] = [
             } for k, label in [("k_1_0", "K7=1.0"),
                                  ("k_0_7", "K7=0.7"),
                                  ("k_0_45", "K7=0.45")]],
+            {
+                "dot_path": "distributional.double_threshold.institution_profile.layer4_share",
+                "label": "Institution-dominant firm — Layer 4 share",
+                "description": (
+                    "Profile of the regulated small firm used in the double-"
+                    "threshold figure. Lower Layer-4 share = harder to clear "
+                    "the economic threshold."),
+                "kind": "slider", "min": 0.0, "max": 0.6, "step": 0.01,
+                "format": "%.2f",
+            },
+            {
+                "dot_path": "distributional.double_threshold.institution_profile.ai_substitution_potential",
+                "label": "Institution-dominant firm — AI substitution potential",
+                "description": "AI substitution that the same profile can realise.",
+                "kind": "slider", "min": 0.0, "max": 1.0, "step": 0.05,
+                "format": "%.2f",
+            },
+        ],
+    },
+
+    # ======================================================================
+    # 15 — Startup economics (Section 6)
+    # ======================================================================
+    {
+        "id": "startup_economics",
+        "label": "🚀 Startup economics (Section 6)",
+        "intro": (
+            "Headline operating economics of the reference startup used "
+            "throughout Section 6: initial team and runway, burn per "
+            "engineer, growth assumptions, and the unit economics that "
+            "feed every valuation method (Damodaran, comparables, Berkus, "
+            "VC method)."),
+        "params": [
+            {"dot_path": "startup.initial_team_size",
+             "label": "Initial team size",
+             "description": "Founding engineering headcount at T0.",
+             "kind": "number", "min": 1, "max": 200, "step": 1, "format": "%d"},
+            {"dot_path": "startup.initial_runway_months",
+             "label": "Initial runway (months)",
+             "description": "Months of cash on hand at founding.",
+             "kind": "slider", "min": 0.0, "max": 36.0, "step": 1.0,
+             "format": "%.0f"},
+            {"dot_path": "startup.monthly_burn_per_engineer_usd",
+             "label": "Monthly burn per engineer (USD)",
+             "description": "Fully-loaded monthly cost of one engineer.",
+             "kind": "number", "min": 0.0, "max": 50_000.0, "step": 500.0,
+             "format": "%.0f"},
+            {"dot_path": "startup.trl_initial",
+             "label": "Initial TRL",
+             "description": "Technology Readiness Level at T0 (1–9).",
+             "kind": "number", "min": 1, "max": 9, "step": 1, "format": "%d"},
+            {"dot_path": "startup.trl_target",
+             "label": "Target TRL at exit",
+             "description": "TRL achieved by the end of the projection horizon.",
+             "kind": "number", "min": 1, "max": 9, "step": 1, "format": "%d"},
+            {"dot_path": "startup.cac_usd",
+             "label": "Customer Acquisition Cost (USD)",
+             "description": "Sales + marketing cost per acquired customer.",
+             "kind": "number", "min": 0.0, "max": 100_000.0, "step": 500.0,
+             "format": "%.0f"},
+            {"dot_path": "startup.ltv_usd",
+             "label": "Lifetime Value (USD)",
+             "description": "Discounted gross profit per customer over its lifecycle.",
+             "kind": "number", "min": 0.0, "max": 500_000.0, "step": 1_000.0,
+             "format": "%.0f"},
+            {"dot_path": "startup.churn_monthly",
+             "label": "Monthly churn",
+             "description": "Fraction of customers lost per month.",
+             "kind": "slider", "min": 0.0, "max": 0.20, "step": 0.005,
+             "format": "%.3f"},
+            {"dot_path": "startup.market_size_usd",
+             "label": "Addressable market (USD)",
+             "description": "Total addressable market used to bound the VC valuation method.",
+             "kind": "number", "min": 0.0, "max": 1e12, "step": 1e8,
+             "format": "%.0f"},
+            {"dot_path": "startup.growth.base_saas_growth_rate",
+             "label": "Base SaaS growth rate (monthly)",
+             "description": "Steady-state monthly ARR growth in the SaaS phase.",
+             "kind": "slider", "min": 0.0, "max": 0.40, "step": 0.01,
+             "format": "%.2f"},
+            {"dot_path": "startup.growth.saas_projection_growth_rate",
+             "label": "SaaS projection growth (annual)",
+             "description": "Annualised growth used by the projection module.",
+             "kind": "slider", "min": 1.0, "max": 3.0, "step": 0.05,
+             "format": "%.2f"},
+        ],
+    },
+
+    # ======================================================================
+    # 16 — Investor framework (Section 6)
+    # ======================================================================
+    {
+        "id": "investor",
+        "label": "👨‍💼 Investor framework (Section 6)",
+        "intro": (
+            "Investor decision and thesis parameters. ``target_irr`` and "
+            "``hold_period`` drive the VC-method valuation; "
+            "``decision_threshold`` is the score above which the AI-aware "
+            "thesis approves a deal."),
+        "params": [
+            {"dot_path": "investor.target_irr",
+             "label": "Target IRR",
+             "description": "Required internal rate of return for an investor go-decision.",
+             "kind": "slider", "min": 0.0, "max": 1.0, "step": 0.01,
+             "format": "%.2f"},
+            {"dot_path": "investor.hold_period_years",
+             "label": "Hold period (years)",
+             "description": "Investment horizon for the VC-method valuation.",
+             "kind": "number", "min": 1, "max": 15, "step": 1, "format": "%d"},
+            {"dot_path": "investor.default_dilution_per_round",
+             "label": "Default dilution per round",
+             "description": "Equity dilution assumed at each financing event.",
+             "kind": "slider", "min": 0.0, "max": 0.50, "step": 0.01,
+             "format": "%.2f"},
+            {"dot_path": "investor.decision_threshold",
+             "label": "Decision threshold (thesis score)",
+             "description": (
+                 "Composite thesis score above which an AI-aware investor "
+                 "approves a deal."),
+             "kind": "slider", "min": 0.0, "max": 1.0, "step": 0.01,
+             "format": "%.2f"},
+            {"dot_path": "investor.thesis_weights_ai_aware.hypothesis_quality",
+             "label": "AI-aware weight — Hypothesis quality",
+             "description": "Weight on Layer-5 hypothesis quality in the AI-aware thesis.",
+             "kind": "slider", "min": 0.0, "max": 0.6, "step": 0.05,
+             "format": "%.2f"},
+            {"dot_path": "investor.thesis_weights_ai_aware.institutional_embedding",
+             "label": "AI-aware weight — Institutional embedding",
+             "description": "Weight on Layer-6 institutional embedding (regulatory/accreditation).",
+             "kind": "slider", "min": 0.0, "max": 0.6, "step": 0.05,
+             "format": "%.2f"},
+        ],
+    },
+
+    # ======================================================================
+    # 17 — Hype cycle (Section 6.5)
+    # ======================================================================
+    {
+        "id": "hype_cycle",
+        "label": "📈 Hype cycle — classical and post-GenAI (Section 6.5)",
+        "intro": (
+            "Quarterly coordinates of the two Hype-Cycle curves. The "
+            "classical curve has a single valley; the post-GenAI curve "
+            "exhibits the new commoditization valley around quarters "
+            "14–22, the central observation of Section 6.5. Drives "
+            "Figure 4."),
+        "params": [
+            # Classical curve
+            *[{
+                "dot_path": f"hype_cycle.classical.{k}",
+                "label": f"Classical — {label}",
+                "description": "Coordinate of the classical Gartner Hype Cycle.",
+                "kind": "number", "min": 0, "max": 200, "step": 1,
+                "format": "%d",
+            } for k, label in [
+                ("peak_quarter", "peak quarter"),
+                ("trough_quarter", "trough quarter"),
+                ("plateau_quarter", "plateau quarter"),
+                ("peak_height", "peak height"),
+                ("trough_height", "trough height"),
+                ("plateau_height", "plateau height"),
+            ]],
+            # Post-GenAI curve
+            *[{
+                "dot_path": f"hype_cycle.post_genai.{k}",
+                "label": f"Post-GenAI — {label}",
+                "description": "Coordinate of the post-AI double-valley curve.",
+                "kind": "number", "min": 0, "max": 200, "step": 1,
+                "format": "%d",
+            } for k, label in [
+                ("peak_quarter", "peak quarter"),
+                ("trough_quarter", "first trough quarter"),
+                ("trough_height", "first trough height"),
+                ("second_peak_quarter", "second peak quarter"),
+                ("second_peak_height", "second peak height"),
+                ("commoditization_valley_quarter", "commoditization-valley quarter"),
+                ("commoditization_valley_height", "commoditization-valley height"),
+                ("plateau_quarter", "plateau quarter"),
+                ("plateau_height", "plateau height"),
+            ]],
+        ],
+    },
+
+    # ======================================================================
+    # 18 — Death valley dynamics (Section 6.5)
+    # ======================================================================
+    {
+        "id": "death_valley",
+        "label": "💀 Death-valley dynamics (Section 6.5)",
+        "intro": (
+            "Cash-trajectory parameters of the post-AI double valley: "
+            "burn rates, refinancing event, revenue ramp, and margin "
+            "compression after the second valley. Drives Figure 5."),
+        "params": [
+            {"dot_path": "death_valley.post_genai.initial_cash_usd",
+             "label": "Initial cash (USD)",
+             "description": "Founding cash balance.",
+             "kind": "number", "min": 0.0, "max": 50e6, "step": 100_000.0,
+             "format": "%.0f"},
+            {"dot_path": "death_valley.post_genai.monthly_burn_usd_initial",
+             "label": "Initial monthly burn (USD)",
+             "description": "Burn rate at founding before any funding event.",
+             "kind": "number", "min": 0.0, "max": 5e6, "step": 5_000.0,
+             "format": "%.0f"},
+            {"dot_path": "death_valley.post_genai.refinancing_event_month",
+             "label": "Refinancing event month",
+             "description": "Month at which the Series A (or equivalent) injection occurs.",
+             "kind": "number", "min": 0, "max": 60, "step": 1, "format": "%d"},
+            {"dot_path": "death_valley.post_genai.refinancing_amount_usd",
+             "label": "Refinancing amount (USD)",
+             "description": "Cash raised at the refinancing event.",
+             "kind": "number", "min": 0.0, "max": 100e6, "step": 100_000.0,
+             "format": "%.0f"},
+            {"dot_path": "death_valley.post_genai.peak_revenue_usd_per_month",
+             "label": "Peak monthly revenue (USD)",
+             "description": "Revenue ceiling reached after the second valley.",
+             "kind": "number", "min": 0.0, "max": 10e6, "step": 10_000.0,
+             "format": "%.0f"},
+            {"dot_path": "death_valley.post_genai.margin_compression_factor",
+             "label": "Margin compression after second valley",
+             "description": (
+                 "Fraction of margin lost to commoditization in the post-"
+                 "second-valley regime."),
+             "kind": "slider", "min": 0.0, "max": 1.0, "step": 0.05,
+             "format": "%.2f"},
+            {"dot_path": "death_valley.post_genai.commoditization_valley_start_month",
+             "label": "Commoditization valley — start month",
+             "description": "Onset of the second (commoditization) valley.",
+             "kind": "number", "min": 0, "max": 60, "step": 1, "format": "%d"},
+            {"dot_path": "death_valley.post_genai.commoditization_valley_end_month",
+             "label": "Commoditization valley — end month",
+             "description": "End of the second valley.",
+             "kind": "number", "min": 0, "max": 60, "step": 1, "format": "%d"},
+        ],
+    },
+
+    # ======================================================================
+    # 19 — Streaming cost decomposition (Appendix D)
+    # ======================================================================
+    {
+        "id": "streaming_costs",
+        "label": "🎬 Streaming cost decomposition (Appendix D)",
+        "intro": (
+            "Seven-component cost decomposition of the streaming incumbent's "
+            "plan price. The sum (excluding operating margin) defines the "
+            "stack the IA-native entrant compresses. Drives Figure 24."),
+        "params": [
+            *[{
+                "dot_path": f"streaming_case.cost_decomposition_pct.{k}",
+                "label": f"{label} (% of price)",
+                "description": "Fraction of the standard plan price attributed to this cost component.",
+                "kind": "slider", "min": 0.0, "max": 1.0, "step": 0.01,
+                "format": "%.2f",
+            } for k, label in [
+                ("content_licensing_production", "Content licensing & production"),
+                ("engineering_technology", "Engineering & technology"),
+                ("customer_support", "Customer support"),
+                ("cloud_cdn_infrastructure", "Cloud & CDN infrastructure"),
+                ("marketing", "Marketing"),
+                ("general_administrative", "General & administrative"),
+                ("operating_margin", "Operating margin"),
+            ]],
+        ],
+    },
+
+    # ======================================================================
+    # 20 — Upstream chain — exposure matrix (Appendix F.2)
+    # ======================================================================
+    {
+        "id": "upstream",
+        "label": "🔗 Upstream chain — exposure matrix (Appendix F.2)",
+        "intro": (
+            "How exposed each of the seven upstream AI value-chain "
+            "categories is to each of the seven layers. 0 = not exposed; "
+            "3 = predominant exposure. Drives Figure 37."),
+        "params": [
+            item for cat_key, cat_label in [
+                ("foundry_pure_plays", "Foundry pure-plays"),
+                ("training_silicon", "Training silicon"),
+                ("inference_edge_silicon", "Inference & edge silicon"),
+                ("memory_hbm", "Memory & HBM"),
+                ("hyperscalers", "Hyperscalers"),
+                ("frontier_labs", "Frontier labs"),
+                ("ai_tooling_platforms", "AI tooling platforms"),
+            ] for item in [{
+                "dot_path": f"upstream_chain.categories.{cat_key}.exposure.{layer_key}",
+                "label": f"{cat_label} — {layer_label}",
+                "description": (
+                    f"Exposure level (0..3) of {cat_label} to {layer_label}."),
+                "kind": "slider", "min": 0, "max": 3, "step": 1, "format": "%d",
+            } for layer_key, layer_label in [
+                ("L1_train", "L1 training compute"),
+                ("L1_infer", "L1 inference compute"),
+                ("L2", "L2 foundation models"),
+                ("L3", "L3 capability access"),
+                ("L4", "L4 codified synthesis"),
+                ("L5", "L5 judgment"),
+                ("L6", "L6 institutional"),
+            ]]
         ],
     },
 ]

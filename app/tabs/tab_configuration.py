@@ -27,9 +27,13 @@ def _slider(label: str, dot_path: str, *,
     step = float(step)
     default = float(config.get(dot_path, min_value))
     current = float(state.get_override(dot_path, default))
+    key = f"cfg_{dot_path}"
+    # Pre-sync canonical value into session_state so an edit made in
+    # another tab (Research Levers, topical sliders) is reflected here.
+    st.session_state[key] = current
     val = st.slider(label, min_value=min_value, max_value=max_value,
                     value=current, step=step, help=help, format=format,
-                    key=f"cfg_{dot_path}")
+                    key=key)
     if abs(val - default) > 1e-12:
         state.set_override(dot_path, val)
     elif dot_path in st.session_state.get("overrides", {}):
@@ -55,9 +59,12 @@ def _number(label: str, dot_path: str, *, help: str = "",
     step = cast(step) if as_int else float(step)
     default = cast(config.get(dot_path, min_value))
     current = cast(state.get_override(dot_path, default))
+    key = f"cfg_{dot_path}"
+    # Pre-sync canonical value into session_state for cross-tab sync.
+    st.session_state[key] = current
     val = st.number_input(label, min_value=min_value, max_value=max_value,
                           value=current, step=step, help=help, format=format,
-                          key=f"cfg_{dot_path}")
+                          key=key)
     tol = 0 if as_int else 1e-9
     if abs(val - default) > tol:
         state.set_override(dot_path, val)

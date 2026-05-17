@@ -379,7 +379,7 @@ def _cover_page(styles, *, country_label: str, override_count: int,
                                  thickness=1, hAlign="CENTER"))
     elements.append(Spacer(1, 1.5 * cm))
     elements.append(Paragraph(f"<b>Generated:</b> {timestamp}", styles["meta"]))
-    elements.append(Paragraph(f"<b>Jurisdiction:</b> {country_label}",
+    elements.append(Paragraph(f"<b>Active jurisdictions:</b> {country_label}",
                                 styles["meta"]))
     elements.append(Paragraph(f"<b>Active overrides:</b> {override_count}",
                                 styles["meta"]))

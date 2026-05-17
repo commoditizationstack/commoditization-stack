@@ -34,6 +34,7 @@ from src import config
 # ---------------------------------------------------------------------------
 
 DEFAULT_COUNTRY = "united_states"
+DEFAULT_COUNTRIES = ["brazil", "france", "united_states"]
 COUNTRY_LABELS = {
     "brazil": "🇧🇷 Brazil",
     "france": "🇫🇷 France",
@@ -43,8 +44,12 @@ COUNTRY_LABELS = {
 
 def init_session_state() -> None:
     """Set up st.session_state keys used across the app. Idempotent."""
+    if "countries" not in st.session_state:
+        # All three blocs active by default — comparative scenario mode.
+        st.session_state["countries"] = list(DEFAULT_COUNTRIES)
     if "country" not in st.session_state:
-        st.session_state["country"] = DEFAULT_COUNTRY
+        # Backwards-compat: the single-country anchor (first selected).
+        st.session_state["country"] = st.session_state["countries"][0]
     if "overrides" not in st.session_state:
         st.session_state["overrides"] = {}
     if "recompute_counter" not in st.session_state:
@@ -136,10 +141,33 @@ def effective_parameters() -> dict:
 # Country selection
 # ---------------------------------------------------------------------------
 
+def current_countries() -> list:
+    """List of country slugs the user currently has selected for comparison.
+
+    Always non-empty: if the user clears the multi-select we fall back to
+    every available country, since downstream charts assume at least one.
+    """
+    if "countries" not in st.session_state:
+        init_session_state()
+    selected = list(st.session_state.get("countries") or [])
+    if not selected:
+        selected = list(DEFAULT_COUNTRIES)
+    return selected
+
+
 def current_country() -> str:
-    """Return the user-selected country slug ('brazil' / 'france' / 'united_states')."""
+    """Anchor country: the first one in the active selection.
+
+    Tabs that still need a single country (PDF cover, sample-firm view,
+    migration trajectory anchor) use this. Tabs that should iterate over
+    every active jurisdiction call ``current_countries()`` instead.
+    """
     if "country" not in st.session_state:
         init_session_state()
+    selected = current_countries()
+    # Keep the legacy `country` key consistent with the active selection.
+    if st.session_state.get("country") not in selected:
+        st.session_state["country"] = selected[0]
     return st.session_state["country"]
 
 
@@ -148,6 +176,13 @@ def country_label(country: Optional[str] = None) -> str:
     if country is None:
         country = current_country()
     return COUNTRY_LABELS.get(country, country)
+
+
+def country_labels(countries: Optional[list] = None) -> list:
+    """Pretty labels for a list of country slugs."""
+    if countries is None:
+        countries = current_countries()
+    return [COUNTRY_LABELS.get(c, c) for c in countries]
 
 
 # ---------------------------------------------------------------------------

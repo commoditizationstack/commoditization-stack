@@ -44,20 +44,29 @@ def global_sidebar() -> dict:
         unsafe_allow_html=True,
     )
 
-    # -------- Country selector ----------------------------------------
-    st.sidebar.subheader("🌎 Jurisdiction")
+    # -------- Country selector (multi-bloc comparative scenario) ------
+    st.sidebar.subheader("🌎 Jurisdictions in scope")
     country_keys = list(state.COUNTRY_LABELS.keys())
     country_label_to_key = {state.COUNTRY_LABELS[k]: k for k in country_keys}
-    current_label = state.COUNTRY_LABELS[state.current_country()]
-    chosen_label = st.sidebar.radio(
-        "Select country for jurisdiction-dependent figures",
+    current_labels = [state.COUNTRY_LABELS[k]
+                       for k in state.current_countries()]
+    chosen_labels = st.sidebar.multiselect(
+        "Active blocs (Section 7 + Appendix D + all comparative charts)",
         options=[state.COUNTRY_LABELS[k] for k in country_keys],
-        index=country_keys.index(state.current_country()),
-        help="Changes the country used in Section 7 (jurisdictional), "
-             "Section 7.5 (migration), Appendix D (fiscal blocs), and any "
-             "tab that depends on jurisdictional fiscal calibrations.",
+        default=current_labels,
+        help="Select one or more jurisdictions. Every comparative chart "
+             "(jurisdictional inversion, migration cash flow, fiscal blocs, "
+             "cross-border M&A) iterates only over the selected blocs.",
     )
-    st.session_state["country"] = country_label_to_key[chosen_label]
+    chosen_slugs = [country_label_to_key[lbl] for lbl in chosen_labels]
+    if not chosen_slugs:
+        st.sidebar.warning("Pick at least one jurisdiction — falling back "
+                            "to all three.")
+        chosen_slugs = list(state.DEFAULT_COUNTRIES)
+    st.session_state["countries"] = chosen_slugs
+    # Keep the legacy single-country pointer aligned with the first selection.
+    if st.session_state.get("country") not in chosen_slugs:
+        st.session_state["country"] = chosen_slugs[0]
 
     # -------- Fast sliders --------------------------------------------
     st.sidebar.subheader("⚡ Quick parameters")
@@ -181,4 +190,5 @@ def global_sidebar() -> dict:
         "layer5_share": layer5,
         "layer6_share": layer6,
         "country": state.current_country(),
+        "countries": state.current_countries(),
     }

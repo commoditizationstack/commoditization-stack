@@ -23,6 +23,18 @@ def _coerce(value, *, format: str):
     return int(value) if format == "%d" else float(value)
 
 
+def _sync_widget(key: str, canonical) -> None:
+    """Force the widget at `key` to display `canonical` on this rerun.
+
+    Streamlit caches widget values in session_state by key. Without this
+    pre-sync, a slider in Tab A would not pick up an edit made by a
+    slider in Tab B that targets the same dot-path. We write the
+    canonical value into session_state BEFORE the widget is instantiated
+    this run, which is the only window in which writes are allowed.
+    """
+    st.session_state[key] = canonical
+
+
 def _render_slider(param, *, group_id: str):
     fmt = param["format"]
     mn = _coerce(param["min"], format=fmt)
@@ -30,11 +42,13 @@ def _render_slider(param, *, group_id: str):
     step = _coerce(param["step"], format=fmt)
     default = _coerce(config.get(param["dot_path"], mn), format=fmt)
     current = _coerce(state.get_override(param["dot_path"], default), format=fmt)
+    key = f"lvr_{group_id}_{param['dot_path']}"
+    _sync_widget(key, current)
     val = st.slider(
         param["label"],
         min_value=mn, max_value=mx, value=current, step=step,
         format=fmt, help=param["description"],
-        key=f"lvr_{group_id}_{param['dot_path']}",
+        key=key,
     )
     return val, default
 
@@ -46,11 +60,13 @@ def _render_number(param, *, group_id: str):
     step = _coerce(param["step"], format=fmt)
     default = _coerce(config.get(param["dot_path"], mn), format=fmt)
     current = _coerce(state.get_override(param["dot_path"], default), format=fmt)
+    key = f"lvr_{group_id}_{param['dot_path']}"
+    _sync_widget(key, current)
     val = st.number_input(
         param["label"],
         min_value=mn, max_value=mx, value=current, step=step,
         format=fmt, help=param["description"],
-        key=f"lvr_{group_id}_{param['dot_path']}",
+        key=key,
     )
     return val, default
 

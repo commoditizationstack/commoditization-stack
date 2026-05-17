@@ -18,10 +18,12 @@ FIG_DIR = PROJECT_ROOT / "outputs" / "figures"
 def render(global_params: dict):
     state.init_session_state()
 
+    active = state.current_countries()
+    active_labels = " · ".join(state.country_labels(active))
     st.header("🌎 Jurisdictional substitution (Section 7)")
     st.markdown(
         f"""
-        Currently selected jurisdiction: **{state.country_label()}**
+        Active jurisdictions in this comparative view: **{active_labels}**
 
         Section 7 demonstrates the counterintuitive jurisdictional ordering
         of the inverted Damodaran key-person discount: high-wage jurisdictions
@@ -29,7 +31,8 @@ def render(global_params: dict):
         labor-cost multipliers, because the absolute base salary dominates the
         dollar value of the substitution.
 
-        > 💵 All monetary values in USD.
+        > 💵 All monetary values in USD. Edit the **🌎 Jurisdictions in scope**
+        > multi-select in the sidebar to add or remove blocs from the comparison.
         """
     )
 
@@ -63,6 +66,7 @@ def render(global_params: dict):
         discount_rate=float(p["jurisdictions"]["default_discount_rate"]),
         horizon_years=int(p["jurisdictions"]["default_horizon_years"]),
         highlight_country=state.current_country(),
+        countries=active,
     )
     st.pyplot(fig_npv, use_container_width=True)
 
@@ -77,6 +81,7 @@ def render(global_params: dict):
         enterprise_value_usd=ev_million * 1e6,
         ai_cost_per_eng_year_usd=float(
             p["migration_dynamics"]["ai_tooling_cost_per_dev_usd_year"]),
+        countries=active,
     )
     st.pyplot(fig_cb, use_container_width=True)
 

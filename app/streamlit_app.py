@@ -21,6 +21,7 @@ from app.shared import parameter_panels, state
 from app.tabs import (
     tab_overview,
     tab_research_levers,
+    tab_company_valuation,
     tab_configuration,
     tab_layers,
     tab_inverted_discount,
@@ -72,19 +73,21 @@ def main():
     )
 
     st.title("The Cost Gradient of the Build — Interactive Simulator")
+    active = " · ".join(state.country_labels())
     st.markdown(
         "*Companion to de Miranda Neto (2026), "
         "*The Cost Gradient of the Build*. "
-        f"Selected jurisdiction: **{state.country_label()}**. 💵 USD throughout.*"
+        f"Active jurisdictions: **{active}**. 💵 USD throughout.*"
     )
 
     # Global sidebar (country selector + quick parameters + scenario YAML)
     global_params = parameter_panels.global_sidebar()
 
-    # 16 tabs mirroring the paper structure
+    # 17 tabs mirroring the paper structure
     tabs = st.tabs([
         "🏠 Overview",
         "🔬 Research Levers",
+        "🏢 Company Valuation",
         "⚙️ Configuration",
         "🧬 Seven Layers",
         "💰 Inverted Discount",
@@ -106,32 +109,34 @@ def main():
     with tabs[1]:
         tab_research_levers.render()
     with tabs[2]:
-        tab_configuration.render()
+        tab_company_valuation.render()
     with tabs[3]:
-        tab_layers.render(global_params)
+        tab_configuration.render()
     with tabs[4]:
-        tab_inverted_discount.render(global_params)
+        tab_layers.render(global_params)
     with tabs[5]:
-        tab_jurisdictional.render(global_params)
+        tab_inverted_discount.render(global_params)
     with tabs[6]:
-        tab_migration.render(global_params)
+        tab_jurisdictional.render(global_params)
     with tabs[7]:
-        tab_hype_cycle.render(global_params)
+        tab_migration.render(global_params)
     with tabs[8]:
-        tab_appendix_a.render(global_params)
+        tab_hype_cycle.render(global_params)
     with tabs[9]:
-        tab_appendix_b.render(global_params)
+        tab_appendix_a.render(global_params)
     with tabs[10]:
-        tab_appendix_d.render(global_params)
+        tab_appendix_b.render(global_params)
     with tabs[11]:
-        tab_appendix_e.render(global_params)
+        tab_appendix_d.render(global_params)
     with tabs[12]:
-        tab_appendix_f.render(global_params)
+        tab_appendix_e.render(global_params)
     with tabs[13]:
-        tab_appendix_g.render(global_params)
+        tab_appendix_f.render(global_params)
     with tabs[14]:
-        tab_pdf_export.render()
+        tab_appendix_g.render(global_params)
     with tabs[15]:
+        tab_pdf_export.render()
+    with tabs[16]:
         tab_about.render()
 
 

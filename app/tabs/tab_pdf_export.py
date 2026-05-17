@@ -127,6 +127,8 @@ def render():
         country_slug = state.current_country()
         parameters = state.effective_parameters()
         overrides = dict(st.session_state.get("overrides", {}))
+        countries = state.current_countries()
+        countries_label = " · ".join(state.country_labels(countries))
 
         with st.spinner("Building PDF — embedding figures, this may take a few seconds…"):
             try:
@@ -134,7 +136,7 @@ def render():
                 pdf_bytes = pdf_export.generate_pdf_report(
                     parameters=parameters,
                     overrides=overrides,
-                    country_label=state.country_label(country_slug),
+                    country_label=countries_label,
                     summary_metrics=summary_metrics,
                 )
             except Exception as exc:

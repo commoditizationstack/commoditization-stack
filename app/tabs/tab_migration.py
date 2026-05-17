@@ -18,10 +18,12 @@ FIG_DIR = PROJECT_ROOT / "outputs" / "figures"
 def render(global_params: dict):
     state.init_session_state()
 
+    active = state.current_countries()
+    active_labels = " · ".join(state.country_labels(active))
     st.header("⏱ Migration Dynamics (Section 7.5)")
     st.markdown(
         f"""
-        Currently selected jurisdiction: **{state.country_label()}**
+        Active jurisdictions: **{active_labels}**
 
         Section 7.5 introduces the AI-orchestrator function as a **permanent**
         labor input alongside the assessment phase, dual-operation overhead,
@@ -30,35 +32,32 @@ def render(global_params: dict):
         conceals.
 
         > 💵 All monetary values in USD. Calibrations from Sections 7.2 and 7.5.
+        > Add or remove blocs in the **🌎 Jurisdictions in scope** multi-select
+        > to reshape this comparative view.
         """
     )
 
-    # Live computation under current country
-    country = state.current_country()
-    st.subheader(f"Live break-even computation for current jurisdiction")
-    ref_result = reference_firm_migration(country)
+    # Live computation for each active country
+    st.subheader("Live break-even computation per active jurisdiction")
+    cols = st.columns(max(1, len(active)))
+    for col, country in zip(cols, active):
+        with col:
+            r = reference_firm_migration(country)
+            be = r.break_even_quarter
+            be_str = f"Q{be:.1f} ({be*3:.0f} mo)" if be else "> 5 years"
+            st.metric(
+                state.country_label(country),
+                be_str,
+                f"+${r.cumulative_5y_post_t0_usd / 1e6:.2f}M @ Y5",
+            )
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        be = ref_result.break_even_quarter
-        be_str = f"Q{be:.1f} ({be*3:.0f} months)" if be else "> 5 years"
-        st.metric("Reference firm break-even", be_str)
-    with col2:
-        st.metric("Annual gross saving",
-                   f"${ref_result.annual_gross_saving_usd / 1e6:.2f}M")
-    with col3:
-        st.metric("5-year cumulative gain",
-                   f"${ref_result.cumulative_5y_post_t0_usd / 1e6:.2f}M")
-
-    # ===== Live cash-flow trajectories across 3 jurisdictions =====
+    # ===== Live cash-flow trajectories across selected jurisdictions =====
     st.markdown("---")
     st.subheader("📈 Reference firm migration cash flow (live)")
     st.caption("Trajectories regenerate when you change orchestrator ratio, "
-                "premium, learning curve, or loaded SWE cost in ⚙️ Configuration.")
-    results = {
-        j: reference_firm_migration(j)
-        for j in ["brazil", "france", "united_states"]
-    }
+                "premium, learning curve, or loaded SWE cost in ⚙️ Configuration "
+                "— and update with the multi-select above.")
+    results = {j: reference_firm_migration(j) for j in active}
     from app.shared import live_figures
     fig = live_figures.migration_cash_flow_trajectories(results)
     st.pyplot(fig, use_container_width=True)

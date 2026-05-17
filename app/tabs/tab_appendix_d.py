@@ -86,7 +86,8 @@ def render(global_params: dict):
     st.subheader("🏛 Fiscal impact across 3 blocs (live)")
     st.caption("Edit corporate tax rates, employer charges, or transfer-pricing "
                 "shares in ⚙️ Configuration → Fiscal blocs to reshape.")
-    fig_fiscal = live_figures.fiscal_blocs_decomposition(blocs)
+    fig_fiscal = live_figures.fiscal_blocs_decomposition(
+        blocs, countries=state.current_countries())
     st.pyplot(fig_fiscal, use_container_width=True)
 
     # ===== Paper PNGs collapsed =====
