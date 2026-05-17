@@ -88,6 +88,19 @@ def _deep_merge(target: dict, source: dict) -> dict:
     return target
 
 
+def _coerce_key(cur: dict, raw: str) -> Any:
+    """Return the actual dict key matching `raw`: prefer the string form;
+    fall back to the integer form when the YAML stores integer keys
+    (e.g. ``trl_discount_premium`` uses ``1..9: float``)."""
+    if raw in cur:
+        return raw
+    if raw.lstrip("-").isdigit():
+        as_int = int(raw)
+        if as_int in cur:
+            return as_int
+    return raw  # new key — keep as string
+
+
 def _apply_overrides_to_dict(base: dict, overrides: Dict[str, Any]) -> dict:
     """Apply dot-path overrides to a nested dict, returning a new dict."""
     out = deepcopy(base)
@@ -95,10 +108,12 @@ def _apply_overrides_to_dict(base: dict, overrides: Dict[str, Any]) -> dict:
         parts = path.split(".")
         cur = out
         for key in parts[:-1]:
-            if key not in cur or not isinstance(cur[key], dict):
-                cur[key] = {}
-            cur = cur[key]
-        cur[parts[-1]] = value
+            real_key = _coerce_key(cur, key) if isinstance(cur, dict) else key
+            if real_key not in cur or not isinstance(cur[real_key], dict):
+                cur[real_key] = {}
+            cur = cur[real_key]
+        leaf_key = _coerce_key(cur, parts[-1]) if isinstance(cur, dict) else parts[-1]
+        cur[leaf_key] = value
     return out
 
 

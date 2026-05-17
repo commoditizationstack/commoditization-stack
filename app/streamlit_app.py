@@ -20,6 +20,7 @@ import streamlit as st
 from app.shared import parameter_panels, state
 from app.tabs import (
     tab_overview,
+    tab_research_levers,
     tab_configuration,
     tab_layers,
     tab_inverted_discount,
@@ -80,9 +81,10 @@ def main():
     # Global sidebar (country selector + quick parameters + scenario YAML)
     global_params = parameter_panels.global_sidebar()
 
-    # 15 tabs mirroring the paper structure
+    # 16 tabs mirroring the paper structure
     tabs = st.tabs([
         "🏠 Overview",
+        "🔬 Research Levers",
         "⚙️ Configuration",
         "🧬 Seven Layers",
         "💰 Inverted Discount",
@@ -102,32 +104,34 @@ def main():
     with tabs[0]:
         tab_overview.render()
     with tabs[1]:
-        tab_configuration.render()
+        tab_research_levers.render()
     with tabs[2]:
-        tab_layers.render(global_params)
+        tab_configuration.render()
     with tabs[3]:
-        tab_inverted_discount.render(global_params)
+        tab_layers.render(global_params)
     with tabs[4]:
-        tab_jurisdictional.render(global_params)
+        tab_inverted_discount.render(global_params)
     with tabs[5]:
-        tab_migration.render(global_params)
+        tab_jurisdictional.render(global_params)
     with tabs[6]:
-        tab_hype_cycle.render(global_params)
+        tab_migration.render(global_params)
     with tabs[7]:
-        tab_appendix_a.render(global_params)
+        tab_hype_cycle.render(global_params)
     with tabs[8]:
-        tab_appendix_b.render(global_params)
+        tab_appendix_a.render(global_params)
     with tabs[9]:
-        tab_appendix_d.render(global_params)
+        tab_appendix_b.render(global_params)
     with tabs[10]:
-        tab_appendix_e.render(global_params)
+        tab_appendix_d.render(global_params)
     with tabs[11]:
-        tab_appendix_f.render(global_params)
+        tab_appendix_e.render(global_params)
     with tabs[12]:
-        tab_appendix_g.render(global_params)
+        tab_appendix_f.render(global_params)
     with tabs[13]:
-        tab_pdf_export.render()
+        tab_appendix_g.render(global_params)
     with tabs[14]:
+        tab_pdf_export.render()
+    with tabs[15]:
         tab_about.render()
 
 

@@ -14,9 +14,8 @@ def render():
         with a Seven-Layer Framework of the Knowledge-Production Stack
         and the Strategic Reinvention of Innovation-Driven Entrepreneurship**
 
-        *Arthur de Miranda Neto*
-        UFLA — Universidade Federal de Lavras
-        2026
+        *Arthur de Miranda Neto* (2026)
+        [LinkedIn](https://www.linkedin.com/in/arthur-mneto/)
 
         ### Citation (BibTeX)
 
@@ -33,7 +32,8 @@ def render():
 
         ### Open-source repository
 
-        - GitHub: [commoditization-stack-simulation](https://github.com/)
+        - GitHub: [commoditization-stack-simulation](https://github.com/ademiran/commoditization-stack-simulation)
+        - Author: Arthur de Miranda Neto · [LinkedIn](https://www.linkedin.com/in/arthur-mneto/)
         - License: MIT
         - Documentation: see `docs/EXTENDING.md` and `README.md` in the
           repository root.

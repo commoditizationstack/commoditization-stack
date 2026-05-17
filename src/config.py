@@ -50,12 +50,22 @@ def load_parameters() -> Dict[str, Any]:
 
 
 def get(path: str, default: Any = None) -> Any:
-    """Dot-path accessor: get("startup.growth.runway_months_before_team_can_grow")."""
+    """Dot-path accessor: get("startup.growth.runway_months_before_team_can_grow").
+
+    Accepts integer keys transparently: a path component that is all
+    digits matches int(key) when the string form is absent (some YAML
+    sections, e.g. ``trl_discount_premium``, use int keys).
+    """
     cur: Any = load_parameters()
     for key in path.split("."):
-        if not isinstance(cur, dict) or key not in cur:
+        if not isinstance(cur, dict):
             return default
-        cur = cur[key]
+        if key in cur:
+            cur = cur[key]
+        elif key.lstrip("-").isdigit() and int(key) in cur:
+            cur = cur[int(key)]
+        else:
+            return default
     return cur
 
 

@@ -448,23 +448,66 @@ def _escape(text: str) -> str:
             .replace(">", "&gt;"))
 
 
+def _get_by_dot_path(parameters: Dict[str, Any], path: str) -> Any:
+    """Walk a dotted path through a nested dict; return None if missing.
+
+    Tries the string key first; falls back to int(part) when the part
+    is all-digit. (YAML loads keys like ``1: 0.16`` as integers, not
+    strings.)
+    """
+    cur: Any = parameters
+    for part in path.split("."):
+        if not isinstance(cur, dict):
+            return None
+        if part in cur:
+            cur = cur[part]
+        elif part.lstrip("-").isdigit() and int(part) in cur:
+            cur = cur[int(part)]
+        else:
+            return None
+    return cur
+
+
+def _format_value(value: Any, fmt: str) -> str:
+    """Render a parameter value for the table cell."""
+    if value is None:
+        return "—"
+    try:
+        if fmt == "%d":
+            return f"{int(value)}"
+        if fmt.startswith("%."):
+            return fmt % float(value)
+    except (TypeError, ValueError):
+        pass
+    return str(value)
+
+
 def _parameter_tables(styles, *, parameters: Dict[str, Any],
                        overrides: Dict[str, Any]) -> List:
-    """Build per-section tables of every parameter with override indicator.
+    """Build the curated research-levers chapter of the PDF.
 
-    Long dot-paths are wrapped via Paragraph (CJK word-wrap) so they never
-    overflow into the value column. Each section starts with a 1-2 sentence
-    description; the header is bundled with the first chunk via KeepTogether
-    so headings never become orphans on a page break.
+    Driven by app.shared.research_levers.LEVER_GROUPS — the same manifest
+    that powers the 🔬 Research Levers tab. Internal-mechanics parameters
+    (random seeds, grid sizes, plot constants) are intentionally excluded.
+
+    Each group is a section with a short intro and a table of
+    Parameter / Description / Value / Modified. Section headers are
+    glued to their first table chunk via KeepTogether to avoid orphans.
     """
-    elements: List = [Paragraph("Complete parameter table", styles["h1"])]
+    # Local import keeps the module load-order light.
+    from . import research_levers
+
+    elements: List = [Paragraph("Research levers — parameters that matter",
+                                  styles["h1"])]
     elements.append(Paragraph(
-        f"Every numeric parameter consumed by the simulation under the "
-        f"current parameter overlay. Each section below corresponds to a "
-        f"part of <i>The Cost Gradient of the Build</i>; the brief intro "
-        f"under each heading points to that part. Variables modified by "
-        f"the user are flagged with ★ in the rightmost column. "
-        f"Total active overrides: <b>{len(overrides)}</b>. "
+        f"This chapter records the parameters a working researcher or PhD "
+        f"student would plausibly want to manipulate to test a hypothesis "
+        f"under the framework. Internal mechanics — random seeds, "
+        f"Monte-Carlo run counts, plot constants — are intentionally "
+        f"omitted; they live in <font face='Courier'>parameters.yaml</font> "
+        f"for power-user inspection. "
+        f"Variables modified by the user are flagged with ★ in the "
+        f"rightmost column. Total active overrides: <b>{len(overrides)}</b>. "
         f"💵 Monetary values are in USD where applicable.",
         styles["body"]))
 
@@ -477,53 +520,43 @@ def _parameter_tables(styles, *, parameters: Dict[str, Any],
          [colors.HexColor("#FAFBFC"), colors.white]),
         ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#DDDDDD")),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("ALIGN", (2, 1), (2, -1), "CENTER"),
+        ("ALIGN", (2, 1), (2, -1), "RIGHT"),
+        ("ALIGN", (3, 1), (3, -1), "CENTER"),
         ("LEFTPADDING", (0, 0), (-1, -1), 4),
         ("RIGHTPADDING", (0, 0), (-1, -1), 4),
         ("TOPPADDING", (0, 0), (-1, -1), 3),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
     ])
 
-    col_widths = [9 * cm, 6.5 * cm, 1.4 * cm]
+    # Column widths: Parameter / Description / Value / Mod.
+    col_widths = [4.6 * cm, 8.6 * cm, 2.0 * cm, 1.2 * cm]
 
-    for section in PARAMETER_SECTIONS_TO_INCLUDE:
-        if section not in parameters:
-            continue
+    head = [
+        Paragraph("<b>Parameter</b>", styles["table_path"]),
+        Paragraph("<b>What it is</b>", styles["table_path"]),
+        Paragraph("<b>Value</b>", styles["table_value"]),
+        "Mod.",
+    ]
 
-        header = Paragraph(f"§ {section}", styles["h2"])
-        intro_text = SECTION_DESCRIPTIONS.get(
-            section,
-            "Parameters that belong to this section of the framework.")
-        intro = Paragraph(intro_text, styles["intro"])
+    for group in research_levers.LEVER_GROUPS:
+        header = Paragraph(group["label"], styles["h2"])
+        intro = Paragraph(group["intro"], styles["intro"])
 
-        rows = _flatten_params({section: parameters[section]})
-        # Build rendered rows once
         body_rows: List[List] = []
-        for path, value in rows:
-            modified = "★" if path in overrides else ""
-            value_str = value if len(value) <= 90 else value[:87] + "..."
+        for spec in group["params"]:
+            value = _get_by_dot_path(parameters, spec["dot_path"])
+            modified = "★" if spec["dot_path"] in overrides else ""
             body_rows.append([
-                Paragraph(_escape(path), styles["table_path"]),
-                Paragraph(_escape(value_str), styles["table_value"]),
+                Paragraph(_escape(spec["label"]), styles["table_path"]),
+                Paragraph(_escape(spec["description"]), styles["table_value"]),
+                Paragraph(_escape(_format_value(value, spec["format"])),
+                            styles["table_value"]),
                 modified,
             ])
 
-        # Header row reused across chunks
-        head = [
-            Paragraph("<b>Parameter</b>", styles["table_path"]),
-            Paragraph("<b>Value</b>", styles["table_value"]),
-            "Mod.",
-        ]
-
-        # Chunk into ~24 rows per slice; keep the section header glued to the
-        # first chunk so it never appears alone at the bottom of a page.
-        chunk_size = 24
-        chunks: List[List[List]] = []
-        for start in range(0, len(body_rows), chunk_size):
-            chunks.append(body_rows[start:start + chunk_size])
-        if not chunks:
-            chunks = [[]]
-
+        chunk_size = 18
+        chunks = [body_rows[i:i + chunk_size]
+                  for i in range(0, len(body_rows), chunk_size)] or [[]]
         for i, chunk in enumerate(chunks):
             tbl = Table([head] + chunk, colWidths=col_widths, repeatRows=1)
             tbl.setStyle(table_style)

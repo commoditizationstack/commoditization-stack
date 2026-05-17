@@ -40,18 +40,26 @@ def _slider(label: str, dot_path: str, *,
 
 def _number(label: str, dot_path: str, *, help: str = "",
             min_value: float = 0.0, max_value: float = 1e15,
-            step: float = 1.0, format: str = "%.0f") -> float:
-    """Number input that reads override (if set) or YAML default."""
-    # Streamlit refuses mixed int/float bounds — coerce everything to float.
-    min_value = float(min_value)
-    max_value = float(max_value)
-    step = float(step)
-    default = float(config.get(dot_path, min_value))
-    current = float(state.get_override(dot_path, default))
+            step: float = 1.0, format: str = "%.0f"):
+    """Number input that reads override (if set) or YAML default.
+
+    Streamlit requires every numeric argument to share a single type.
+    When `format` is "%d" we coerce everything to int (otherwise Streamlit
+    warns "value has type float, but format %d displays as integer");
+    otherwise we coerce to float.
+    """
+    as_int = format == "%d"
+    cast = int if as_int else float
+    min_value = cast(min_value)
+    max_value = cast(max_value)
+    step = cast(step) if as_int else float(step)
+    default = cast(config.get(dot_path, min_value))
+    current = cast(state.get_override(dot_path, default))
     val = st.number_input(label, min_value=min_value, max_value=max_value,
                           value=current, step=step, help=help, format=format,
                           key=f"cfg_{dot_path}")
-    if abs(val - default) > 1e-9:
+    tol = 0 if as_int else 1e-9
+    if abs(val - default) > tol:
         state.set_override(dot_path, val)
     elif dot_path in st.session_state.get("overrides", {}):
         del st.session_state["overrides"][dot_path]

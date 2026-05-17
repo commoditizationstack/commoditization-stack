@@ -5,8 +5,6 @@ type: software
 authors:
   - given-names: Arthur
     family-names: de Miranda Neto
-    email: arthur.miranda@ufla.br
-    affiliation: "Federal University of Lavras (UFLA)"
 repository-code: "[GitHub TBD]"
 abstract: >
   Computational appendix to the working paper "The Cost Gradient of the Build:
