@@ -82,5 +82,106 @@ class TestSimulationRuns(unittest.TestCase):
         self.assertIn("damodaran_inverted", result.valuations_at_exit)
 
 
+# ----------------------------------------------------------------------------
+# Tests for the new Phase-1 modules (migration_dynamics, streaming_case,
+# fiscal_blocs, fragility, upstream_chain, distributional)
+# ----------------------------------------------------------------------------
+
+class TestPhase1NewModules(unittest.TestCase):
+    """All new Phase-1 modules import and execute their primary entry points."""
+
+    def test_migration_dynamics_imports(self):
+        from src import migration_dynamics
+        self.assertTrue(hasattr(migration_dynamics, "compute_migration"))
+        self.assertTrue(hasattr(migration_dynamics, "reference_firm_migration"))
+
+    def test_migration_reference_firm_us(self):
+        from src.migration_dynamics import reference_firm_migration
+        r = reference_firm_migration("united_states")
+        self.assertEqual(r.n_substitutable + r.n_retained, 50)
+        # US should break even within the 5-year horizon
+        self.assertIsNotNone(r.break_even_quarter)
+        self.assertGreater(r.cumulative_5y_post_t0_usd, 0)
+
+    def test_migration_orchestrator_floor_for_small_firm(self):
+        from src.migration_dynamics import compute_migration, MigrationParameters
+        # Tiny firm — orchestrator floor must keep n_orchestrators >= 1 if subst > 0
+        r = compute_migration(MigrationParameters(
+            n_total_engineers=8, substitution_fraction=0.50,
+            jurisdiction="united_states",
+        ))
+        self.assertGreaterEqual(r.n_orchestrators, 1)
+
+    def test_streaming_case_decomposition(self):
+        from src.streaming_case import (
+            incumbent_price_decomposition, run_three_scenarios)
+        inc = incumbent_price_decomposition()
+        # Total must match standard plan price within float tolerance
+        self.assertAlmostEqual(inc.total, 15.49, places=2)
+        # Content must be 50% of price
+        self.assertAlmostEqual(inc.content_licensing, 15.49 * 0.50, places=2)
+
+        results = run_three_scenarios()
+        self.assertEqual(len(results), 3)
+        # Entrant prices must be strictly below incumbent in all three scenarios
+        for r in results:
+            self.assertLess(r.entrant.total, r.incumbent.total)
+            # Aggressive scenario must produce larger reduction than conservative
+        self.assertGreater(results[2].price_reduction_pct,
+                           results[0].price_reduction_pct)
+
+    def test_fiscal_blocs_projection(self):
+        from src.fiscal_blocs import project_all_blocs
+        blocs = project_all_blocs()
+        self.assertEqual(set(blocs.keys()),
+                         {"brazil", "france", "united_states"})
+        # Brazil and France net impact should be positive (revenue loss);
+        # US should be negative (revenue gain).
+        self.assertGreater(blocs["brazil"].net_impact_usd_millions, 0)
+        self.assertGreater(blocs["france"].net_impact_usd_millions, 0)
+        self.assertLess(blocs["united_states"].net_impact_usd_millions, 0)
+
+    def test_fragility_case_studies(self):
+        from src.fragility import case_studies_fragility
+        f = case_studies_fragility()
+        # NeuroCertify must be resilient; DataFlow Pro must be fragile
+        self.assertEqual(f["neurocertify"].zone, "resilient")
+        self.assertEqual(f["dataflow_pro"].zone, "fragile")
+        # NeuroCertify index must be negative; DataFlow positive
+        self.assertLess(f["neurocertify"].fragility_index, 0)
+        self.assertGreater(f["dataflow_pro"].fragility_index, 0)
+
+    def test_upstream_chain_seven_categories(self):
+        from src.upstream_chain import all_categories
+        cats = all_categories()
+        self.assertEqual(len(cats), 7)
+        slugs = [c.slug for c in cats]
+        self.assertIn("frontier_labs", slugs)
+        self.assertIn("hyperscalers", slugs)
+
+    def test_upstream_capex_sensitivity_decay(self):
+        from src.upstream_chain import capex_sensitivity_curves
+        t, train, infer = capex_sensitivity_curves()
+        # At zero tightness both indices should be ~100
+        self.assertAlmostEqual(train[0], 100.0, places=0)
+        self.assertAlmostEqual(infer[0], 100.0, places=0)
+        # Training capex must decay faster than inference
+        self.assertLess(train[-1], infer[-1])
+
+    def test_distributional_double_threshold(self):
+        from src.distributional import compute_double_threshold
+        d = compute_double_threshold()
+        # Compliance threshold must be higher than economic threshold
+        # (XAI infra floor > orchestrator floor alone)
+        self.assertGreater(d.compliance_break_even, d.economic_break_even)
+
+    def test_distributional_xai_gap_widens_as_k_falls(self):
+        from src.distributional import compute_xai_capacity_gap
+        x = compute_xai_capacity_gap()
+        # Gap at K=0.45 must be larger than at K=1.0
+        self.assertGreater(x.endpoint_gaps["k_0_45"],
+                           x.endpoint_gaps["k_1_0"])
+
+
 if __name__ == "__main__":
     unittest.main()

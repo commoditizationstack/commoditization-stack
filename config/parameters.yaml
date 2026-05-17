@@ -22,6 +22,15 @@
 #  14. sweeps                 - script-level sweep grids (heatmaps, sensitivity)
 #  15. streamlit_ui           - Streamlit slider defaults and firm profile presets
 #  16. structural             - structural constants (logit scaling, clip bounds)
+#  17. migration_dynamics     - Section 7.5: orchestrator, learning curve, transition
+#  18. streaming_case         - Appendix D: streamer cost decomposition, scenarios
+#  19. fiscal_blocs           - Appendix D.6: corporate tax, transfer pricing, 5y projection
+#  20. fragility_index        - Appendix E.5: fragility index coefficients
+#  21. upstream_chain         - Appendix F: 7 upstream firm categories + sensitivities
+#  22. distributional         - Appendix G: double threshold, XAI capacity gap
+#  23. case_studies_dynamic   - Appendix E: NeuroCertify + DataFlow Pro detailed splits
+#  24. macro                  - Risk-free rate, ERP, terminal growth (used by Appendices A, B)
+#  25. funding_stages_carta   - Carta Q3 2025 funding-round benchmarks (Appendix E)
 # ============================================================================
 
 # ----------------------------------------------------------------------------
@@ -534,3 +543,408 @@ structural:
   substitutability_clip_max: 0.99
   classical_hype_rise_exponent: 1.5
   post_genai_hype_rise_exponent: 1.3
+
+# ----------------------------------------------------------------------------
+# 17. MIGRATION DYNAMICS (Section 7.5)
+# Temporal model of AI migration: assessment phase, transition overheads,
+# learning curve, permanent orchestrator function.
+# Source: Brynjolfsson, Li & Raymond (2025); Cazzaniga et al. IMF (2024);
+# Gartner (2025); McKinsey (2025); Battery Ventures (2026); Levels.fyi Q3 2025.
+# ----------------------------------------------------------------------------
+migration_dynamics:
+  assessment_months: 9                  # Pre-T0 calibration period (Brynjolfsson 2025)
+  orchestrator_ratio: 10                # 1 orchestrator per N retained engineers
+  orchestrator_premium_pct: 0.142       # AI-skill premium over senior SWE (Levels.fyi)
+  orchestrator_floor_per_arm: 1         # Minimum 1 orchestrator if any substitution
+  dual_operation_overhead_quarters: 3   # T0 to T3
+  retention_bonus_quarters: 2           # T1 to T2
+  retention_bonus_fraction: 0.10        # of departing senior compensation
+  ai_tooling_cost_per_dev_usd_year: 12000   # heavy-use profile, May 2026
+  # Sigmoidal learning curve, fraction of structural saving captured by quarter
+  learning_curve:
+    Q1: 0.00
+    Q2: 0.10
+    Q3: 0.20
+    Q4: 0.30
+    Q5: 0.60
+    Q6: 0.80
+    Q7: 0.90
+    Q8: 0.95
+    Q9: 0.98
+    Q10: 1.00
+  # Senior software engineer loaded annual cost per jurisdiction (Section D.1.2, May 2026)
+  loaded_swe_cost_usd_year:
+    brazil: 95000        # Glassdoor BR mid-large tech, with 1.85 charge multiplier
+    france: 145000       # APEC Paris median + 1.45 employer contributions
+    united_states: 420000   # Levels.fyi SF Bay senior median TC × 1.51
+  # Loaded mid-tier engineer cost (used for substitutable engineers)
+  loaded_mid_engineer_usd_year:
+    brazil: 60000
+    france: 95000
+    united_states: 285000
+  # Loaded customer support agent cost
+  loaded_support_usd_year:
+    brazil: 28000
+    france: 55000
+    united_states: 95000
+  reference_firm:
+    n_engineers: 50
+    substitution_fraction: 0.60       # 60% of team replaceable
+    break_even_months:                # per Figure 11, reference firm
+      brazil: 21
+      france: 21
+      united_states: 16
+    cumulative_5y_usd_millions:       # 5-year net cumulative gain from T0
+      brazil: 3.7
+      france: 7.8
+      united_states: 18.4
+
+# ----------------------------------------------------------------------------
+# 18. STREAMING CASE (Appendix D)
+# Reference: global streamer at scale of segment leader, May 2026.
+# Cost decomposition consistent with publicly reported segment-leader filings.
+# ----------------------------------------------------------------------------
+streaming_case:
+  annual_revenue_usd: 44000000000
+  standard_plan_price_usd_monthly: 15.49
+  engineers_count: 3500
+  support_agents_count: 1200
+  # Cost decomposition of standard plan, as fraction of price
+  cost_decomposition_pct:
+    content_licensing_production: 0.50     # Layer 6 — untouchable by AI
+    engineering_technology: 0.08           # Layer 4 — AI-substitutable
+    customer_support: 0.03                 # Layer 4 — AI-substitutable
+    cloud_cdn_infrastructure: 0.06         # Layer 1 — partially compressible
+    marketing: 0.12
+    general_administrative: 0.06
+    operating_margin: 0.15
+  # Three substitution scenarios per Appendix D.1.5
+  substitution_scenarios:
+    conservative_pct: 0.40
+    moderate_pct: 0.60
+    aggressive_pct: 0.78
+  # Cross-bloc friction (entrant in different bloc than target market)
+  cross_bloc_friction_pct: 0.30           # Reduces effective substitution rate
+
+# ----------------------------------------------------------------------------
+# 19. FISCAL BLOCS (Appendix D.6)
+# Three jurisdictional blocs' 5-year fiscal projection under moderate substitution.
+# Aggregates over streaming-and-adjacent consumer-app sector (multiplier ~6x).
+# ----------------------------------------------------------------------------
+fiscal_blocs:
+  horizon_years: 5
+  sector_workforce_multiplier: 6          # multiplier applied to single-firm reference
+  corporate_tax_rate:
+    brazil: 0.34
+    france: 0.25
+    united_states: 0.26
+  employer_charges_effective_pct:         # Employer-side social charges as % of gross salary
+    brazil: 0.368                          # INSS 20% + FGTS 8% + System S 5.8% + RAT 1-3% (Actual Profit)
+    france: 0.45                           # URSSAF total cadre status 2026
+    united_states: 0.327                   # FICA + FUTA + SUTA + benefits compulsory
+  transfer_pricing_parent_share: 0.70     # HQ captures 70% of margin gain
+  transfer_pricing_subsidiary_share: 0.15 # Local subsidiary captures 15%
+  # Cumulative 5-year fiscal impact under moderate substitution (Fig D.8)
+  # Positive value = State loses revenue; negative value = State gains revenue
+  cumulative_5y_impact_usd_millions:
+    brazil: 47
+    france: 407
+    united_states: -1922
+  # Decomposition of 5-year impact
+  decomposition_5y_usd_millions:
+    lost_social_charges:
+      brazil: 144
+      france: 512
+      united_states: 4340
+    ai_token_export:                      # tax base exported to foreign AI provider
+      brazil: 44
+      france: 43
+      united_states: -185                  # captured domestically (gain)
+    compensating_tax_gain:                 # corporate tax on higher margin
+      brazil: 141
+      france: 148
+      united_states: 6253
+
+# ----------------------------------------------------------------------------
+# 20. FRAGILITY INDEX (Appendix E.5)
+# Map firms across the seven-layer framework by their fragility profile.
+# Fragility index = L4_share - coefficient * L6_share.
+# Negative => resilient; positive => fragile.
+# ----------------------------------------------------------------------------
+fragility_index:
+  l6_coefficient: 1.5                     # weight of Layer 6 protection (illustrative)
+  resilient_threshold: -0.10              # below this => clearly resilient zone
+  fragile_threshold: 0.10                 # above this => clearly fragile zone
+  # Color scale for the fragility map plot
+  color_vmin: -0.7
+  color_vmax: 0.7
+
+# ----------------------------------------------------------------------------
+# 21. UPSTREAM CHAIN (Appendix F)
+# 7 categories of upstream AI value-chain firms mapped to layer exposure.
+# Exposure: 3 = predominant, 2 = secondary, 1 = marginal, 0 = none.
+# ----------------------------------------------------------------------------
+upstream_chain:
+  categories:
+    foundry_pure_plays:
+      label: "Foundry pure-plays (TSMC, GlobalFoundries)"
+      exposure:
+        L1_train: 3
+        L1_infer: 1
+        L2: 0
+        L3: 0
+        L4: 0
+        L5: 0
+        L6: 0
+      structural_sensitivity: "training-capex cycle + financing conditions"
+    training_silicon:
+      label: "Training silicon (NVIDIA H/B-series, AMD MI)"
+      exposure:
+        L1_train: 3
+        L1_infer: 2
+        L2: 1
+        L3: 0
+        L4: 0
+        L5: 0
+        L6: 0
+      structural_sensitivity: "training-capex cycle + financing conditions"
+    inference_edge_silicon:
+      label: "Inference & edge silicon (custom ASICs, edge NPUs)"
+      exposure:
+        L1_train: 1
+        L1_infer: 3
+        L2: 1
+        L3: 1
+        L4: 0
+        L5: 0
+        L6: 0
+      structural_sensitivity: "aggregate Layer-4 adoption (subject to E.2 threshold)"
+    memory_hbm:
+      label: "Memory & HBM (Micron, SK Hynix, Samsung)"
+      exposure:
+        L1_train: 2
+        L1_infer: 2
+        L2: 0
+        L3: 0
+        L4: 0
+        L5: 0
+        L6: 0
+      structural_sensitivity: "tracks training-capex side"
+    hyperscalers:
+      label: "Hyperscalers (AWS, Azure, GCP)"
+      exposure:
+        L1_train: 2
+        L1_infer: 3
+        L2: 2
+        L3: 3
+        L4: 1
+        L5: 0
+        L6: 1
+      structural_sensitivity: "dual exposure; structurally insulated by scale + switching costs"
+    frontier_labs:
+      label: "Frontier labs (Anthropic, OpenAI, DeepMind)"
+      exposure:
+        L1_train: 2
+        L1_infer: 2
+        L2: 3
+        L3: 3
+        L4: 0
+        L5: 1
+        L6: 1
+      structural_sensitivity: "anti-commoditizing on training; sensitive to K7 cross-border regime"
+    ai_tooling_platforms:
+      label: "AI-tooling platforms (Cursor, Lovable, Decagon)"
+      exposure:
+        L1_train: 0
+        L1_infer: 1
+        L2: 1
+        L3: 2
+        L4: 3
+        L5: 1
+        L6: 0
+      structural_sensitivity: "most exposed to Layer-4 commoditization (recursive feedback)"
+  # Capex sensitivity to financing tightness (Fig F.3 Panel A)
+  capex_sensitivity:
+    n_grid: 100
+    tightness_min: 0.0
+    tightness_max: 1.0
+    training_decay_exponent: 2.0          # steeper decay for cumulative training capex
+    inference_decay_exponent: 0.5         # gentler decay for marginal inference capex
+    loose_credit_threshold: 0.2
+    tight_credit_threshold: 0.7
+
+# ----------------------------------------------------------------------------
+# 22. DISTRIBUTIONAL (Appendix G)
+# Double threshold for AI migration + XAI capacity gap across blocs.
+# ----------------------------------------------------------------------------
+distributional:
+  double_threshold:
+    n_grid: 100
+    headcount_min: 0
+    headcount_max: 100
+    # Gross saving per engineer-year for institution-dominant firm
+    # (L4 share × AI substitution potential × loaded SWE cost differential)
+    gross_saving_per_eng_usd_year: 102000   # NeuroCertify Brazil arm calibration
+    orchestrator_overhead_floor_usd: 200000  # Economic threshold
+    xai_infrastructure_floor_usd: 370000     # Regulatory-compliance threshold
+    institution_profile:
+      layer4_share: 0.20
+      ai_substitution_potential: 0.50
+  xai_capacity_gap:
+    horizon_years: 8
+    base_year: 2026
+    bloc_a_growth_factor:
+      k_1_0: 1.025                       # 2.5% annual growth at K7=1.0
+      k_0_7: 1.035                       # 3.5% with bloc-internal advantage
+      k_0_45: 1.045                      # 4.5% with full bloc capture
+    bloc_b_growth_factor:
+      k_1_0: 1.020                       # parallel growth under integration
+      k_0_7: 1.015                       # falls behind
+      k_0_45: 1.010                      # falls further behind
+    # Endpoint gap at year 8 under each K7 (Fig G.2)
+    endpoint_gap_year_8:
+      k_1_0: 0.05
+      k_0_7: 0.21
+      k_0_45: 0.34
+
+# ----------------------------------------------------------------------------
+# 23. CASE STUDIES DYNAMIC (Appendix E)
+# NeuroCertify + DataFlow Pro detailed headcount and migration calibration.
+# Continuity with firms_appendix_b (section 10); these data extend it to the
+# dynamic dimension (Section 7.5 migration + Appendix E.1-E.5).
+# ----------------------------------------------------------------------------
+case_studies_dynamic:
+  neurocertify:
+    label: "NeuroCertify (deep-tech, regulated, HIT)"
+    total_ftes: 40
+    funding_stage: "series_a"
+    # Geographic split (Franco-Brazilian)
+    arms:
+      brazil:
+        engineers: 15
+        regulatory_quality: 6
+        clinical_medical: 3
+      france:
+        engineers: 10
+        regulatory_quality: 4
+        clinical_medical: 2
+    layer_4_share: 0.20
+    ai_substitution_potential: 0.50
+    trl_trajectory: [4, 5, 6, 7, 7]
+    fcf_usd_millions: [-1.5, -0.8, 1.2, 5.5, 12.0]
+    second_valley_drag: 0.05
+    # Layer exposure (sums to 1.0)
+    layer_exposure:
+      layer_1_infra: 0.05
+      layer_2_foundation: 0.05
+      layer_3_capability: 0.05
+      layer_4_codified: 0.20
+      layer_5_judgment: 0.20
+      layer_6_institutional: 0.40
+      layer_7_crossborder: 0.05
+    # Phase-conditional beta trajectory (Pre-Seed, Seed, A, B, C, Maturity)
+    beta_trajectory_legacy: [3.2, 2.8, 2.0, 2.2, 1.6, 0.99]
+    beta_trajectory_ai_native: [3.0, 3.1, 2.0, 2.2, 1.6, 0.99]
+    # Five-year migration cumulative result (Fig E.1, K7=1.0)
+    migration_5y_cumulative_usd_millions:
+      brazil_arm: -0.53
+      france_arm: -0.45
+      consolidated: -0.98
+  dataflow_pro:
+    label: "DataFlow Pro (commoditizing, B2B SaaS)"
+    total_ftes: 12
+    funding_stage: "seed"
+    arms:
+      united_states:
+        engineers: 8
+        product_managers: 2
+        sales_customer_success: 2
+    layer_4_share: 0.55
+    ai_substitution_potential: 0.75
+    trl_trajectory: [8, 8, 8, 8, 8]
+    fcf_usd_millions: [-1.2, 0.8, -0.2, 4.0, 9.5]
+    second_valley_drag: 0.30
+    layer_exposure:
+      layer_1_infra: 0.05
+      layer_2_foundation: 0.05
+      layer_3_capability: 0.10
+      layer_4_codified: 0.55
+      layer_5_judgment: 0.10
+      layer_6_institutional: 0.10
+      layer_7_crossborder: 0.05
+    beta_trajectory_legacy: [2.8, 2.7, 1.7, 2.4, 1.7, 1.23]
+    beta_trajectory_ai_native: [2.6, 2.7, 1.7, 2.5, 1.7, 1.23]
+    # Three substitution scenarios (40/60/78%) — break-even and 5y cumulative
+    scenarios:
+      conservative:
+        substitution_pct: 0.40
+        substitutable_engineers: 3
+        break_even_months: 33
+        cumulative_5y_usd_millions: 0.77
+      moderate:
+        substitution_pct: 0.60
+        substitutable_engineers: 5
+        break_even_months: 22
+        cumulative_5y_usd_millions: 2.18
+      aggressive:
+        substitution_pct: 0.78
+        substitutable_engineers: 6
+        break_even_months: 20
+        cumulative_5y_usd_millions: 3.05
+
+# ----------------------------------------------------------------------------
+# 24. MACRO (Appendix A, B, F)
+# Risk-free rate, equity risk premium, terminal growth. Used by all DCF/CAPM
+# calculations. Calibrate to current macro state when applying the framework.
+# ----------------------------------------------------------------------------
+macro:
+  risk_free_rate: 0.0425              # US 10y Treasury, ~2026
+  equity_risk_premium: 0.055          # Damodaran ERP US, 2026
+  terminal_growth_rate: 0.03          # long-run nominal growth assumption
+
+# ----------------------------------------------------------------------------
+# 25. FUNDING STAGES CARTA (Appendix E)
+# Carta State of Private Markets Q3 2025 medians, used for stage placement.
+# Round sizes in legacy model; AI-native model uses 35% smaller rounds.
+# ----------------------------------------------------------------------------
+funding_stages_carta:
+  ai_native_round_reduction: 0.35       # AI-native rounds 35% smaller
+  legacy_dilution_per_round: 0.22       # Carta Q3 2025 median
+  ai_native_dilution_per_round: 0.175   # smaller rounds → smaller dilution
+  stages:
+    pre_seed:
+      round_size_usd: 1500000
+      median_premoney_usd: 13000000
+      typical_dilution: 0.125
+    seed:
+      round_size_usd: 4000000
+      median_premoney_usd: 16000000
+      typical_dilution: 0.20
+    series_a:
+      round_size_usd: 14000000
+      median_premoney_usd: 49300000
+      typical_dilution: 0.179
+    series_b:
+      round_size_usd: 40000000
+      median_premoney_usd: 118900000
+      typical_dilution: 0.129
+    series_c:
+      round_size_usd: 100000000
+      median_premoney_usd: 350000000
+      typical_dilution: 0.10
+  # Expected investor multiple at 10-year horizon by firm profile and entry stage
+  expected_multiple:
+    neurocertify_legacy:
+      pre_seed: 10.0
+      seed: 6.5
+      series_a: 4.0
+    neurocertify_ai_native:
+      pre_seed: 14.0
+      seed: 9.0
+      series_a: 5.5
+    dataflow_legacy:
+      pre_seed: 7.5
+      seed: 4.5
+    dataflow_ai_native:
+      pre_seed: 10.0
+      seed: 6.0
