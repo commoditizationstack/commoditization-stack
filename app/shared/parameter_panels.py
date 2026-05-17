@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from app.shared import state
+from app.shared import scenarios, state
 from src import config
 
 
@@ -174,6 +174,46 @@ def global_sidebar() -> dict:
             st.sidebar.success(f"Loaded {n_loaded} override(s).")
         except Exception as e:
             st.sidebar.error(f"Failed to load: {e}")
+
+    # -------- Named scenarios -----------------------------------------
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🗂 Named scenarios")
+    names = scenarios.list_names()
+    if names:
+        chosen = st.sidebar.selectbox(
+            "Recall a saved scenario",
+            options=["(none)"] + names,
+            key="scenario_recall_select",
+        )
+        if chosen != "(none)":
+            cols = st.sidebar.columns(2)
+            with cols[0]:
+                if st.button("▶ Load", use_container_width=True,
+                              key="scenario_load_btn"):
+                    if scenarios.recall(chosen):
+                        st.rerun()
+            with cols[1]:
+                if st.button("🗑 Delete", use_container_width=True,
+                              key="scenario_delete_btn"):
+                    scenarios.delete(chosen)
+                    st.rerun()
+    else:
+        st.sidebar.caption("No saved scenarios yet.")
+
+    new_name = st.sidebar.text_input(
+        "Save current as…",
+        placeholder="e.g. Fragmented 2030, France-only baseline",
+        key="scenario_new_name")
+    if st.sidebar.button("💾 Save scenario", use_container_width=True,
+                          key="scenario_save_btn"):
+        if not new_name.strip():
+            st.sidebar.warning("Enter a name first.")
+        elif new_name in names:
+            scenarios.overwrite(new_name)
+            st.sidebar.success(f"Overwrote “{new_name}”.")
+        else:
+            scenarios.save(new_name)
+            st.sidebar.success(f"Saved “{new_name}”.")
 
     # Override count badge
     n_overrides = len(st.session_state.get("overrides", {}))
