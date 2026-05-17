@@ -4,7 +4,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from app.shared import state
+from app.shared import components, state
 from src.valuation import damodaran_classical_discount, damodaran_inverted_discount
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -106,3 +106,24 @@ def render(global_params: dict):
             val["damodaran_inversion_min_substitution_potential"]),
     )
     st.pyplot(fig, use_container_width=True)
+
+    # Insight callout under the heatmap
+    delta_classical = (inv_adj - cls_adj) / 1e6
+    if inv_comp["regime"] == "inverted":
+        components.insight(
+            f"At L4 share {l4_share:.0%} and AI substitutability {ai_sub:.0%}, "
+            f"this firm sits in the <b>inverted</b> region: the layered "
+            f"valuation lifts the headline by "
+            f"<b>${delta_classical:+.1f}M</b> relative to the classical "
+            f"Damodaran discount.",
+            kind="success")
+    else:
+        components.insight(
+            f"At L4 share {l4_share:.0%} and AI substitutability {ai_sub:.0%}, "
+            f"this firm is below the inversion threshold "
+            f"({val['damodaran_inverted_threshold_layer4_share']:.0%}). The "
+            f"classical −"
+            f"{val['damodaran_key_person_discount_classical']*100:.1f}% "
+            f"discount applies; raise the team Layer-4 share to cross the "
+            f"dashed line and observe the sign flip.",
+            kind="info")

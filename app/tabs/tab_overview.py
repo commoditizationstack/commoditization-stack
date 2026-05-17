@@ -2,7 +2,9 @@
 
 import streamlit as st
 
-from app.shared import state
+from app.shared import components, state
+from src.distributional import compute_double_threshold
+from src.fragility import case_studies_fragility
 
 
 def render():
@@ -14,12 +16,34 @@ def render():
         This is the interactive simulator for the framework developed in
         **de Miranda Neto (2026), *The Cost Gradient of the Build***.
 
-        > Currently selected jurisdiction: **{state.country_label()}** ·
-        > Active overrides: **{len(st.session_state.get('overrides', {}))}**
+        > Active blocs: **{' · '.join(state.country_labels())}**
 
         > 💵 All monetary values in this simulator are in **USD**.
         """
     )
+
+    # Hero metric strip — instant orientation under the active scenario.
+    try:
+        fr = case_studies_fragility()
+        dt = compute_double_threshold()
+        p = state.effective_parameters()
+        k7 = float(p["knowledge_regimes"]["regimes"]["current_2026"][
+            "K_coefficient"])
+        ai_sub = float(p["startup"]["ai_substitution_potential_layer4"])
+        components.hero_strip([
+            ("K₇ (current regime)", f"{k7:.2f}",
+             "0.45 = collapse" if k7 < 0.5 else None),
+            ("AI substitutability of L4", f"{ai_sub:.0%}", None),
+            ("NeuroCertify", fr["neurocertify"].zone,
+             f"index {fr['neurocertify'].fragility_index:+.2f}"),
+            ("DataFlow Pro", fr["dataflow_pro"].zone,
+             f"index {fr['dataflow_pro'].fragility_index:+.2f}"),
+            ("Compliance break-even",
+             f"{dt.compliance_break_even:.0f} engineers", None),
+        ])
+    except Exception:
+        # Hero strip is a presentation nicety; never let it break the tab.
+        pass
 
     st.markdown("### How to use")
     col1, col2 = st.columns(2)

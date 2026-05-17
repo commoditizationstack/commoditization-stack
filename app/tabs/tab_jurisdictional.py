@@ -9,7 +9,10 @@ from pathlib import Path
 
 import streamlit as st
 
-from app.shared import state
+from app.shared import components, state
+from src.jurisdictional import (
+    JURISDICTION_DEFAULTS, jurisdictional_inverted_discount,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 FIG_DIR = PROJECT_ROOT / "outputs" / "figures"
@@ -20,6 +23,43 @@ def render(global_params: dict):
 
     active = state.current_countries()
     active_labels = " · ".join(state.country_labels(active))
+
+    # Hero strip: inversion premium per active bloc.
+    try:
+        p_now = state.effective_parameters()
+        startup_cfg = p_now.get("startup", {})
+        val_cfg = p_now["valuation"]
+        ev_ref = 200_000_000.0
+        salaries = {"brazil": 35000.0, "france": 75000.0,
+                    "united_states": 165000.0}
+        metrics = []
+        for c in active[:4]:
+            j = JURISDICTION_DEFAULTS[c]
+            _, info = jurisdictional_inverted_discount(
+                enterprise_value_usd=ev_ref,
+                team_layer4_share=float(val_cfg.get(
+                    "damodaran_inverted_threshold_layer4_share", 0.55)) + 0.15,
+                ai_substitution_potential_layer4=float(val_cfg.get(
+                    "damodaran_inversion_min_substitution_potential", 0.30))
+                    + 0.30,
+                n_employees=int(startup_cfg.get("n_employees",
+                                                  startup_cfg.get(
+                                                      "initial_team_size", 50))),
+                avg_base_salary_usd=salaries.get(c, 80000.0),
+                annual_ai_cost_per_replaced_employee_usd=float(
+                    startup_cfg.get("annual_ai_cost_per_replaced_employee_usd",
+                                     12000)),
+                jurisdiction=j,
+            )
+            metrics.append((
+                state.country_label(c),
+                f"${info['inversion_premium_usd']/1e6:+.1f}M",
+                info["regime"],
+            ))
+        components.hero_strip(metrics)
+    except Exception:
+        pass
+
     st.header("🌎 Jurisdictional substitution (Section 7)")
     st.markdown(
         f"""

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from app.shared import state
+from app.shared import components, state
 from src.migration_dynamics import reference_firm_migration, case_study_migration
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -20,6 +20,23 @@ def render(global_params: dict):
 
     active = state.current_countries()
     active_labels = " · ".join(state.country_labels(active))
+
+    # Hero strip: break-even quarter per active jurisdiction.
+    try:
+        metrics = []
+        for c in active[:4]:
+            r = reference_firm_migration(c)
+            be = r.break_even_quarter
+            be_str = f"Q{be:.1f}" if be else "> 5y"
+            metrics.append((
+                state.country_label(c),
+                be_str,
+                f"+${r.cumulative_5y_post_t0_usd/1e6:.1f}M @ Y5",
+            ))
+        components.hero_strip(metrics)
+    except Exception:
+        pass
+
     st.header("⏱ Migration Dynamics (Section 7.5)")
     st.markdown(
         f"""
