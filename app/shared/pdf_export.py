@@ -552,7 +552,7 @@ def _figures_section(styles) -> List:
         "below each image, the italicised line names the source PNG and "
         "summarises the chart. All charts reflect the parameter overlay "
         "active at the moment this report was built — to regenerate under "
-        "a different scenario, use the 🔄 Recalcular Tudo control in the "
+        "a different scenario, use the 🔄 Recompute All control in the "
         "simulator sidebar.",
         styles["body"]))
 
@@ -617,16 +617,23 @@ def _figures_section(styles) -> List:
 
 def _appendix_yaml(styles, *, overrides: Dict[str, Any]) -> List:
     """Scenario YAML appendix for reproducibility."""
-    elements = [Paragraph("Appendix — Scenario YAML", styles["h1"])]
+    elements: List = [Paragraph("Appendix — Scenario YAML", styles["h1"])]
+    elements.append(Paragraph(
+        "This appendix records the exact set of parameter changes that were "
+        "active when this report was built. It is a self-contained record of "
+        "the scenario: anyone with access to the simulator can recreate the "
+        "same numbers and figures by loading this YAML.",
+        styles["body"]))
+
     if not overrides:
         elements.append(Paragraph(
-            "No overrides were active when this report was generated. "
-            "Re-running the simulator with this scenario reproduces the default "
-            "behavior of <font face='Courier'>config/parameters.yaml</font>.",
+            "<b>No parameter changes were active.</b> This report was built on "
+            "the default calibration of the framework — that is, the values "
+            "shipped with the simulator's configuration file. To reproduce, "
+            "open the simulator and leave every input untouched.",
             styles["body"]))
         return elements
 
-    # Build the nested YAML form of the overlay
     overlay: Dict[str, Any] = {}
     for path, value in overrides.items():
         parts = path.split(".")
@@ -635,12 +642,16 @@ def _appendix_yaml(styles, *, overrides: Dict[str, Any]) -> List:
             cur = cur.setdefault(key, {})
         cur[parts[-1]] = value
     text = yaml.safe_dump(overlay, sort_keys=False, allow_unicode=True)
+
     elements.append(Paragraph(
-        "Save this YAML as <font face='Courier'>scenario.yaml</font> and pass "
-        "to <font face='Courier'>load_overrides_from_yaml_bytes()</font> in "
-        "<font face='Courier'>app/shared/state.py</font> to reproduce this "
-        "scenario in the simulator.",
+        "<b>How to reproduce this scenario.</b> Copy the YAML below into a "
+        "file (any name, e.g. <i>my_scenario.yaml</i>). In the simulator's "
+        "left sidebar, open the <b>💾 Scenario YAML</b> section and use "
+        "<b>📤 Upload scenario YAML</b> to load the file. Every parameter "
+        "you changed when you built this report will be re-applied; all "
+        "tabs and figures will then reflect this exact scenario.",
         styles["body"]))
+    elements.append(Spacer(1, 4 * mm))
     # YAML in a code-styled paragraph (line by line for clean wrap)
     for line in text.splitlines():
         elements.append(Paragraph(

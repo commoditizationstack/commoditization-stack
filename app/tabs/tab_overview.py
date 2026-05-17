@@ -30,7 +30,7 @@ def render():
             - 🌎 **Jurisdiction** — sync country across all tabs
             - ⚡ **Quick parameters** — K₇, AI substitution, layer exposure
               (live updates downstream)
-            - 🔄 **Recalcular Tudo** — force re-execution of heavy simulations
+            - 🔄 **Recompute All** — force re-execution of heavy simulations
             - 💾 **Scenario YAML** — download / upload your overrides
             """
         )

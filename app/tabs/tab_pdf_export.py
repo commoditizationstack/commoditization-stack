@@ -116,7 +116,7 @@ def render():
     if fig_count < total_fig:
         st.warning(
             f"⚠️ {total_fig - fig_count} figures missing from `outputs/figures/`. "
-            f"Use 🔄 **Recalcular Tudo** in the sidebar (or the launcher) to "
+            f"Use 🔄 **Recompute All** in the sidebar (or the launcher) to "
             f"regenerate them under your scenario before exporting."
         )
 

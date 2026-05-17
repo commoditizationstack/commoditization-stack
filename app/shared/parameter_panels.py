@@ -5,7 +5,7 @@ Three behavior tiers:
     visualisations live on each interaction.
   · Country selector — synchronously rebinds every jurisdiction-dependent
     figure across all tabs.
-  · "Recalcular Tudo" — bumps the recompute counter so cached heavy
+  · "Recompute All" — bumps the recompute counter so cached heavy
     simulations (Monte Carlo, full migration scan, 5-year fiscal projection)
     refresh on the next render.
 
@@ -127,9 +127,9 @@ def global_sidebar() -> dict:
                                    0.0, 0.6, layer6, step,
                                    key="sidebar_l6")
 
-    # -------- Recalcular ----------------------------------------------
+    # -------- Recompute -----------------------------------------------
     st.sidebar.markdown("---")
-    if st.sidebar.button("🔄 Recalcular Tudo", use_container_width=True,
+    if st.sidebar.button("🔄 Recompute All", use_container_width=True,
                           help="Force re-execution of heavy simulations "
                                "(Monte Carlo, full migration scan, fiscal projection)."):
         state.request_recompute()

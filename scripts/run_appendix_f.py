@@ -185,11 +185,22 @@ def make_fig_f2_mapping():
 
 
 def make_fig_f3_sensitivities():
-    """Figure F.3: three structural sensitivities in three panels."""
-    fig, axes = plt.subplots(2, 2, figsize=(14, 11))
+    """Figure F.3: three structural sensitivities in three panels.
+
+    Layout: Panel A and Panel B side-by-side on top, Panel C spanning the
+    full width below. Built with GridSpec so tight_layout doesn't collide
+    with manual positioning.
+    """
+    from matplotlib.gridspec import GridSpec
+    fig = plt.figure(figsize=(14, 11))
+    gs = GridSpec(2, 2, figure=fig, hspace=0.40, wspace=0.25,
+                  left=0.07, right=0.97, top=0.93, bottom=0.07)
+    ax_a = fig.add_subplot(gs[0, 0])
+    ax_b = fig.add_subplot(gs[0, 1])
+    ax_c = fig.add_subplot(gs[1, :])
 
     # Panel A: capex sensitivity to financing
-    ax = axes[0, 0]
+    ax = ax_a
     t, train, infer = capex_sensitivity_curves()
     cs = config.load_parameters()["upstream_chain"]["capex_sensitivity"]
     ax.plot(t, train, color="#C44536", linewidth=2.4,
@@ -213,7 +224,7 @@ def make_fig_f3_sensitivities():
     ax.set_ylim(30, 105)
 
     # Panel B: adoption threshold
-    ax = axes[0, 1]
+    ax = ax_b
     curves = adoption_threshold_curves()
     ax.plot(curves["headcount"], curves["l4_heavy_saving_usd"] / 1000,
             color="#C44536", linewidth=2.4, label="Gross saving — L4-heavy firm")
@@ -243,10 +254,8 @@ def make_fig_f3_sensitivities():
     ax.set_ylim(0, 1500)
     ax.set_xlim(0, 100)
 
-    # Panel C: K7 sensitivity per jurisdiction (occupies bottom row)
-    ax = axes[1, 0]
-    fig.delaxes(axes[1, 1])
-    ax.set_position([0.15, 0.05, 0.7, 0.35])
+    # Panel C: K7 sensitivity per jurisdiction (spans bottom row)
+    ax = ax_c
 
     k7 = k7_sensitivity_per_jurisdiction()
     k_grid = k7["k_grid"]
@@ -273,12 +282,11 @@ def make_fig_f3_sensitivities():
     ax.set_xlim(0.2, 1.0)
     ax.set_ylim(0, 4.5)
 
-    plt.suptitle("Three structural sensitivities the framework illuminates",
-                 fontsize=13, fontweight="bold", y=0.995)
-    plt.tight_layout()
+    fig.suptitle("Three structural sensitivities the framework illuminates",
+                 fontsize=13, fontweight="bold", y=0.985)
     out = FIG_DIR / "fig38_appendix_f_sensitivities.png"
-    plt.savefig(out, dpi=140, bbox_inches="tight")
-    plt.close()
+    fig.savefig(out, dpi=140, bbox_inches="tight")
+    plt.close(fig)
     print(f"Wrote {out}")
 
 

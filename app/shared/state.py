@@ -48,7 +48,7 @@ def init_session_state() -> None:
     if "overrides" not in st.session_state:
         st.session_state["overrides"] = {}
     if "recompute_counter" not in st.session_state:
-        # Bumped by the "Recalcular" button to invalidate caches.
+        # Bumped by the "Recompute All" button to invalidate caches.
         st.session_state["recompute_counter"] = 0
 
 
