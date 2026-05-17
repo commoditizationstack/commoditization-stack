@@ -1,70 +1,92 @@
-"""Overview tab — explains the framework and the simulator."""
+"""Overview tab — landing page with reader's guide."""
+
 import streamlit as st
+
+from app.shared import state
 
 
 def render():
+    state.init_session_state()
+
     st.header("Welcome")
     st.markdown(
-        """
-        This simulator materializes the framework developed in
-        **de Miranda Neto (2026), *The Cost Gradient of the Build***,
-        an open-source companion that allows researchers, practitioners,
-        founders, and educators to interactively explore the four
-        contributions of the paper:
+        f"""
+        This is the interactive simulator for the framework developed in
+        **de Miranda Neto (2026), *The Cost Gradient of the Build***.
 
-        1. **Inverted Damodaran key-person discount under jurisdictional structure**
-           — the central proposition of the paper, demonstrated as a
-           counterintuitive ordering across Brazil, France, and the United States.
-        2. **Seven-layer framework** of the knowledge-production stack,
-           with explicit modulation by the cross-border knowledge regime
-           (the K₇ coefficient).
-        3. **Minimum Viable Hypothesis** as a positive substitute for the
-           Minimum Viable Product (Section 5 of the paper).
-        4. **Layered theory of post-AI defensibility**, showing the migration
-           of strategic value from Layer 4 (commoditizing) to Layers 5 and 6
-           (anti-commoditizing).
+        > Currently selected jurisdiction: **{state.country_label()}** ·
+        > Active overrides: **{len(st.session_state.get('overrides', {}))}**
 
-        ### How to use this simulator
-
-        - **Sidebar (left)** — global parameters that all tabs respect:
-          K₇, AI substitution potential, layer exposure of the reference firm.
-        - **Tabs above** — each tab focuses on one component of the framework
-          or one of the appendices of the paper:
-          - **Seven Layers** — visualization of K₇ effect on Layers 4 and 5
-          - **Appendix A** — layered DCF for two case companies
-          - **Appendix B** — phase-conditional CAPM/WACC with eleven equations
-
-        All defaults are calibrated to publicly cited evidence; all parameters
-        are editable. The simulator is deliberately illustrative rather than
-        predictive; it allows you to construct your own scenarios and explore
-        the consequences of your own assumptions.
+        > 💵 All monetary values in this simulator are in **USD**.
         """
     )
+
+    st.markdown("### How to use")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(
+            """
+            **In the sidebar (left):**
+            - 🌎 **Jurisdiction** — sync country across all tabs
+            - ⚡ **Quick parameters** — K₇, AI substitution, layer exposure
+              (live updates downstream)
+            - 🔄 **Recalcular Tudo** — force re-execution of heavy simulations
+            - 💾 **Scenario YAML** — download / upload your overrides
+            """
+        )
+    with col2:
+        st.markdown(
+            """
+            **In the tabs above (mirroring the paper):**
+            - **⚙️ Configuration** — edit every variable
+            - **🧬 Seven Layers** through **⚖️ Appendix G** —
+              each topic from the paper
+            - **📄 Export PDF** — single-button report (Phase 5)
+            """
+        )
+
+    st.markdown("---")
+
+    st.subheader("Reader's routes (from the paper's Section 1.1)")
+
+    routes = [
+        ("👨‍💼 Investor / acquirer", "Inverted Discount → Jurisdictional → Migration → Appendix D"),
+        ("🚀 Founder / operator", "Seven Layers → Inverted Discount → Migration → Appendix E"),
+        ("⚖️ Regulator / accreditation", "Seven Layers → Appendix F → Appendix G"),
+        ("📚 Researcher / student", "Seven Layers → Inverted Discount → Hype Cycle → All appendices"),
+        ("🔬 Research-funding evaluator", "Seven Layers → Appendix F → Appendix G"),
+        ("💼 Strategy / M&A advisor", "Inverted Discount → Jurisdictional → Appendix A → Appendix D"),
+    ]
+    for audience, route in routes:
+        st.markdown(f"- **{audience}** — {route}")
 
     st.markdown("---")
 
     st.subheader("Status of the framework")
-    col1, col2, col3 = st.columns(3)
-    with col1:
+    cols = st.columns(4)
+    with cols[0]:
         st.metric("Layers operationalized", "7 of 7")
-    with col2:
-        st.metric("Reference firms", "2 (NeuroCertify, DataFlow)")
-    with col3:
+    with cols[1]:
+        st.metric("Reference firms", "2 (NC, DF)")
+    with cols[2]:
         st.metric("Reference jurisdictions", "3 (BR, FR, US)")
+    with cols[3]:
+        st.metric("Figures generated", "41")
 
     st.markdown(
         """
         ### Honest disclaimers
-        - The simulator is **illustrative**, not predictive. Calibrations are
-          grounded in publicly cited evidence (Damodaran, Carta, Dell'Acqua,
-          Felin-Holweg, Equidam-Hectelion) but the specific magnitudes used
-          should be read as plausibility-anchored rather than estimated.
-        - **K₇ is a descriptive indicator of the cross-border knowledge regime,
-          not a policy lever.** The simulator shows conditional consequences
-          of varying K₇, not predictions of the actual K₇ trajectory.
-        - **The inversion of Damodaran's key-person discount** (the paper's
-          central contribution) is presented as a falsifiable proposition,
-          not as an empirically validated finding. Validation against
-          firm-level transaction data is the natural next step.
+        - **Illustrative, not predictive.** All calibrations are grounded in
+          publicly cited evidence (Damodaran, Carta, Equidam-Hectelion,
+          Brynjolfsson, Dell'Acqua, etc.) but the specific magnitudes are
+          plausibility-anchored rather than estimated.
+        - **K₇ is a descriptive indicator**, not a policy lever. The simulator
+          shows *conditional* consequences of varying K₇, not predictions of
+          the actual K₇ trajectory.
+        - **The inversion of Damodaran's key-person discount** is presented
+          as a falsifiable proposition. Validation against firm-level
+          transaction data is the natural next step.
+        - **Appendix C (eight-step operational manual)** is reserved for a
+          future iteration of the simulator.
         """
     )
