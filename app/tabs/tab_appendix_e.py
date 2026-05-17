@@ -47,8 +47,50 @@ def render(global_params: dict):
                    delta=df.zone.title(),
                    delta_color="normal" if df.zone == "resilient" else "inverse")
 
+    # ===== Live fragility map =====
+    from app.shared import live_figures
+    p = state.effective_parameters()
+
     st.markdown("---")
-    st.subheader("Paper figures")
+    st.subheader("🗺 Fragility map (live)")
+    st.caption("The two case-study firms positioned on the L4 × L6 fragility "
+                "surface. Add a third 'custom firm' below to explore your own "
+                "calibration. The map regenerates when you edit Layer-4 / "
+                "Layer-6 shares for either firm in ⚙️ Configuration.")
+
+    cs = p["case_studies_dynamic"]
+    nc_exp = cs["neurocertify"]["layer_exposure"]
+    df_exp = cs["dataflow_pro"]["layer_exposure"]
+
+    firms_to_plot = [
+        ("NeuroCertify", float(nc_exp["layer_4_codified"]),
+         float(nc_exp["layer_6_institutional"]), "#2C5282"),
+        ("DataFlow Pro", float(df_exp["layer_4_codified"]),
+         float(df_exp["layer_6_institutional"]), "#7A1F1F"),
+    ]
+
+    with st.expander("➕ Add a custom firm to the fragility map", expanded=False):
+        col1, col2 = st.columns(2)
+        with col1:
+            custom_l4 = st.slider("Custom firm — Layer 4 share",
+                                    min_value=0.0, max_value=0.80, value=0.35,
+                                    step=0.05, key="custom_firm_l4")
+        with col2:
+            custom_l6 = st.slider("Custom firm — Layer 6 share",
+                                    min_value=0.0, max_value=0.55, value=0.25,
+                                    step=0.05, key="custom_firm_l6")
+        firms_to_plot.append(("Custom firm", custom_l4, custom_l6, "#F5C242"))
+
+    fig = live_figures.fragility_map(
+        l6_coefficient=float(p["fragility_index"]["l6_coefficient"]),
+        color_vmin=float(p["fragility_index"]["color_vmin"]),
+        color_vmax=float(p["fragility_index"]["color_vmax"]),
+        firms=firms_to_plot,
+    )
+    st.pyplot(fig, use_container_width=True)
+
+    st.markdown("---")
+    st.subheader("📊 Paper figures (PNG snapshots)")
 
     nc_tab, df_tab, joint_tab = st.tabs([
         "📘 NeuroCertify", "📕 DataFlow Pro", "📊 Joint comparison"
@@ -70,21 +112,19 @@ def render(global_params: dict):
         fp = FIG_DIR / "fig23_dataflow_migration.png"
         if fp.exists():
             st.image(str(fp),
-                      caption="All scenarios reach break-even within 5y, but "
-                              "absolute gains are modest at small scale.",
+                      caption="All scenarios reach break-even within 5y.",
                       use_container_width=True)
         else:
             st.warning("Figure not found. Run `python scripts/run_section_7_5_migration.py`.")
 
     with joint_tab:
-        fig_titles = [
+        for fname, title in [
             ("fig31_appendix_e_migration.png", "E.1 — Combined migration trajectories"),
             ("fig32_appendix_e_capital.png", "E.2 — Capital trajectory by stage"),
             ("fig33_appendix_e_risk.png", "E.3 — Phase-conditional risk curves"),
             ("fig34_appendix_e_dilution.png", "E.4 — Dilution + investor multiple"),
-            ("fig35_appendix_e_fragility.png", "E.5 — Fragility map (L4 × L6 space)"),
-        ]
-        for fname, title in fig_titles:
+            ("fig35_appendix_e_fragility.png", "E.5 — Fragility map (paper version)"),
+        ]:
             with st.expander(title, expanded=False):
                 fp = FIG_DIR / fname
                 if fp.exists():

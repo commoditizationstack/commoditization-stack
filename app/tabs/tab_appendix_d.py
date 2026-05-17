@@ -73,26 +73,34 @@ def render(global_params: dict):
                 delta_color="inverse" if net > 0 else "normal",
             )
 
+    # ===== Live figures =====
+    from app.shared import live_figures
+
     st.markdown("---")
-    st.subheader("Paper figures")
-    fig_titles = [
-        ("fig24_streaming_price_decomp.png",
-         "Figure D.2 — Price decomposition under 3 scenarios"),
-        ("fig25_streaming_cross_jurisdictional.png",
-         "Figure D.3 — Cross-jurisdictional price competition"),
-        ("fig26_streaming_capital_trajectory.png",
-         "Figure D.4 — Capital trajectory legacy vs IA-native"),
-        ("fig27_streaming_phase_risk.png",
-         "Figure D.5 — Phase-conditional risk legacy vs IA-native"),
-        ("fig28_streaming_dilution_multiple.png",
-         "Figure D.6 — Founder dilution + investor multiple"),
-        ("fig29_streaming_payoff_matrix.png",
-         "Figure D.7 — Payoff matrix (price × catalog parity)"),
-        ("fig30_fiscal_blocs.png",
-         "Figure D.8 — Fiscal impact across 3 blocs"),
-    ]
-    for fname, title in fig_titles:
-        with st.expander(title, expanded=False):
+    st.subheader("📊 Streaming price decomposition (live)")
+    st.caption("Adjust the substitution percentages in ⚙️ Configuration → "
+                "Streaming case, and the stacked bars below refresh instantly.")
+    fig_price = live_figures.streaming_price_decomposition(results=results)
+    st.pyplot(fig_price, use_container_width=True)
+
+    st.subheader("🏛 Fiscal impact across 3 blocs (live)")
+    st.caption("Edit corporate tax rates, employer charges, or transfer-pricing "
+                "shares in ⚙️ Configuration → Fiscal blocs to reshape.")
+    fig_fiscal = live_figures.fiscal_blocs_decomposition(blocs)
+    st.pyplot(fig_fiscal, use_container_width=True)
+
+    # ===== Paper PNGs collapsed =====
+    with st.expander("📷 Original paper figures (Fig D.2–D.8 PNGs)", expanded=False):
+        for fname, title in [
+            ("fig24_streaming_price_decomp.png", "D.2 — Price decomposition"),
+            ("fig25_streaming_cross_jurisdictional.png", "D.3 — Cross-jurisdictional"),
+            ("fig26_streaming_capital_trajectory.png", "D.4 — Capital trajectory"),
+            ("fig27_streaming_phase_risk.png", "D.5 — Phase-conditional risk"),
+            ("fig28_streaming_dilution_multiple.png", "D.6 — Dilution + multiple"),
+            ("fig29_streaming_payoff_matrix.png", "D.7 — Payoff matrix"),
+            ("fig30_fiscal_blocs.png", "D.8 — Fiscal blocs"),
+        ]:
+            st.markdown(f"**{title}**")
             fp = FIG_DIR / fname
             if fp.exists():
                 st.image(str(fp), use_container_width=True)

@@ -50,32 +50,36 @@ def render(global_params: dict):
         st.metric("5-year cumulative gain",
                    f"${ref_result.cumulative_5y_post_t0_usd / 1e6:.2f}M")
 
+    # ===== Live cash-flow trajectories across 3 jurisdictions =====
     st.markdown("---")
-    st.subheader("Paper figures")
+    st.subheader("📈 Reference firm migration cash flow (live)")
+    st.caption("Trajectories regenerate when you change orchestrator ratio, "
+                "premium, learning curve, or loaded SWE cost in ⚙️ Configuration.")
+    results = {
+        j: reference_firm_migration(j)
+        for j in ["brazil", "france", "united_states"]
+    }
+    from app.shared import live_figures
+    fig = live_figures.migration_cash_flow_trajectories(results)
+    st.pyplot(fig, use_container_width=True)
 
-    fig_titles = [
-        ("fig21_migration_reference_firm.png",
-         "Figure 11 — Reference firm (50 engineers, 60% substitution)",
-         "Cumulative cash-flow trajectory across the three jurisdictions, "
-         "with assessment / transition / learning / steady state phases shaded. "
-         "The United States reaches break-even fastest because its absolute "
-         "loaded labor cost dominates the orchestrator overhead."),
-        ("fig22_neurocertify_migration.png",
-         "Figure 12 — NeuroCertify (Brazilian + French arms + consolidated)",
-         "All three trajectories net-negative within the 5-year horizon: "
-         "the orchestrator overhead floor exceeds the gross saving because "
-         "Layer-4-substitutable subset is small (only 1-2 engineers per arm)."),
-        ("fig23_dataflow_migration.png",
-         "Figure 13 — DataFlow Pro (3 substitution scenarios)",
-         "All scenarios reach break-even within 5 years, but cumulative gains "
-         "are modest in absolute terms ($0.77M conservative to $3.05M aggressive) "
-         "because the team itself is small (8 engineers)."),
-    ]
-    for fname, title, caption in fig_titles:
-        st.markdown(f"#### {title}")
-        fp = FIG_DIR / fname
-        if fp.exists():
-            st.image(str(fp), caption=caption, use_container_width=True)
-        else:
-            st.warning(f"Figure {fname} not found. "
-                       f"Run `python scripts/run_section_7_5_migration.py`.")
+    # ===== Paper PNGs collapsed =====
+    with st.expander("📷 Original paper figures (PNG snapshots)", expanded=False):
+        for fname, title, caption in [
+            ("fig21_migration_reference_firm.png",
+             "Figure 11 — Reference firm (50 engineers, 60% substitution)",
+             "Cumulative cash-flow trajectory with phase shading and decomposition table."),
+            ("fig22_neurocertify_migration.png",
+             "Figure 12 — NeuroCertify (Brazilian + French arms + consolidated)",
+             "All three trajectories net-negative within 5y."),
+            ("fig23_dataflow_migration.png",
+             "Figure 13 — DataFlow Pro (3 substitution scenarios)",
+             "All scenarios reach break-even within 5y."),
+        ]:
+            st.markdown(f"**{title}**")
+            fp = FIG_DIR / fname
+            if fp.exists():
+                st.image(str(fp), caption=caption, use_container_width=True)
+            else:
+                st.warning(f"Figure {fname} not found. "
+                           f"Run `python scripts/run_section_7_5_migration.py`.")

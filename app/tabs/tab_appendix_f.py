@@ -41,21 +41,34 @@ def render(global_params: dict):
             )
             st.caption(f"Layer exposure (0..3): {exposure_text}")
 
-    st.markdown("---")
-    st.subheader("Paper figures")
+    # ===== Live K7 sensitivity =====
+    from app.shared import live_figures
+    from src.upstream_chain import k7_sensitivity_per_jurisdiction
 
-    fig_titles = [
-        ("fig36_appendix_f_scope.png",
-         "F.1 — Scope of the framework (prices vs not-prices)"),
-        ("fig37_appendix_f_mapping.png",
-         "F.2 — 7 categories × 7 layers exposure matrix"),
-        ("fig38_appendix_f_sensitivities.png",
-         "F.3 — Three structural sensitivities"),
-        ("fig39_appendix_f_asymmetries.png",
-         "F.4 — Recovery composition asymmetries"),
-    ]
-    for fname, title in fig_titles:
-        with st.expander(title, expanded=False):
+    st.markdown("---")
+    st.subheader("📈 Inversion premium sensitivity to K₇ (live)")
+    st.caption("Sensitivity of the inversion premium to the cross-border "
+                "knowledge regime across three jurisdictions. The collapse "
+                "threshold near K₇ ≈ 0.45 is invariant; the magnitudes scale "
+                "with K₇ per Figure 4 of the paper.")
+    curves = k7_sensitivity_per_jurisdiction()
+    k_grid = curves.pop("k_grid")
+    fig = live_figures.upstream_k7_sensitivity(k_grid=k_grid, curves=curves)
+    st.pyplot(fig, use_container_width=True)
+
+    # ===== Paper PNGs =====
+    with st.expander("📷 Original paper figures (F.1–F.4)", expanded=False):
+        for fname, title in [
+            ("fig36_appendix_f_scope.png",
+             "F.1 — Scope of the framework"),
+            ("fig37_appendix_f_mapping.png",
+             "F.2 — 7 categories × 7 layers exposure matrix"),
+            ("fig38_appendix_f_sensitivities.png",
+             "F.3 — Three structural sensitivities (full)"),
+            ("fig39_appendix_f_asymmetries.png",
+             "F.4 — Recovery composition asymmetries"),
+        ]:
+            st.markdown(f"**{title}**")
             fp = FIG_DIR / fname
             if fp.exists():
                 st.image(str(fp), use_container_width=True)

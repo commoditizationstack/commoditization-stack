@@ -91,15 +91,18 @@ def render(global_params: dict):
         )
 
     st.markdown("---")
-    st.subheader("Paper figure")
-    st.markdown("#### Figure 5 — Inverted key-person heatmap "
-                  "(team L4 share × AI substitutability)")
-    fp = FIG_DIR / "fig3_inverted_keyperson_heatmap.png"
-    if fp.exists():
-        st.image(str(fp), caption="Effective discount rate (%) as a function of team "
-                                    "L4 share (x) and AI substitution potential (y). "
-                                    "The black dashed line marks the zero crossing where "
-                                    "the discount changes sign.",
-                  use_container_width=True)
-    else:
-        st.warning(f"Figure {fp.name} not found. Run `python scripts/run_deterministic.py`.")
+    st.subheader("📈 Inverted key-person heatmap (live)")
+    st.markdown("Effective discount rate as a function of team L4 share and "
+                 "AI substitution potential. The black dashed line marks the "
+                 "sign flip. **Edits to the threshold, classical rate, or max "
+                 "premium in ⚙️ Configuration propagate here instantly.**")
+
+    from app.shared import live_figures
+    fig = live_figures.inverted_discount_heatmap(
+        threshold_layer4_share=float(val["damodaran_inverted_threshold_layer4_share"]),
+        classical_discount_rate=float(val["damodaran_key_person_discount_classical"]),
+        max_premium_when_inverted=float(val["damodaran_inverted_max_premium"]),
+        min_substitution_for_inversion=float(
+            val["damodaran_inversion_min_substitution_potential"]),
+    )
+    st.pyplot(fig, use_container_width=True)

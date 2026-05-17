@@ -55,27 +55,36 @@ def render(global_params: dict):
         st.metric("K₇ = 0.45 (collapse)",
                    f"Δ = {xai.endpoint_gaps['k_0_45']:.2f}")
 
-    st.markdown("---")
-    st.subheader("Paper figures")
+    # ===== Live figures =====
+    from app.shared import live_figures
 
-    fig_titles = [
-        ("fig40_appendix_g_threshold.png",
-         "G.1 — Double threshold for AI migration in regulated small firms",
-         "Gross saving (green) vs orchestrator floor (grey dashed) vs "
-         "orchestrator + XAI infrastructure floor (dark red dashed). "
-         "Firms in the shaded gap zone can migrate economically but cannot "
-         "satisfy regulatory compliance."),
-        ("fig41_appendix_g_xai_gap.png",
-         "G.2 — XAI capacity gap across two blocs under three K₇ regimes",
-         "Lower K₇ produces a larger accumulated gap between blocs over the "
-         "same time horizon. The endpoint gap grows from 0.05 (K=1.0) to "
-         "0.34 (K=0.45) — an order of magnitude."),
-    ]
-    for fname, title, caption in fig_titles:
-        st.markdown(f"#### {title}")
-        fp = FIG_DIR / fname
-        if fp.exists():
-            st.image(str(fp), caption=caption, use_container_width=True)
-        else:
-            st.warning(f"Figure {fname} not found. "
-                       f"Run `python scripts/run_appendix_g.py`.")
+    st.markdown("---")
+    st.subheader("📈 Double threshold (live)")
+    st.caption("Adjust the gross saving per engineer or floor values in "
+                "⚙️ Configuration to reshape the threshold lines.")
+    fig_dt = live_figures.double_threshold(d=d)
+    st.pyplot(fig_dt, use_container_width=True)
+
+    st.subheader("📊 XAI capacity gap (live)")
+    st.caption("Endpoint gap markers (Δ) on the right show the bloc divergence "
+                "at year 8 under each K₇ regime.")
+    fig_xai = live_figures.xai_capacity_gap(x=xai)
+    st.pyplot(fig_xai, use_container_width=True)
+
+    # ===== Paper PNGs =====
+    with st.expander("📷 Original paper figures (G.1, G.2)", expanded=False):
+        for fname, title, caption in [
+            ("fig40_appendix_g_threshold.png",
+             "G.1 — Double threshold",
+             "Gross saving vs orchestrator + XAI infrastructure floor."),
+            ("fig41_appendix_g_xai_gap.png",
+             "G.2 — XAI capacity gap",
+             "Lower K₇ → larger gap. Endpoint Δ grows 0.05 → 0.34."),
+        ]:
+            st.markdown(f"**{title}**")
+            fp = FIG_DIR / fname
+            if fp.exists():
+                st.image(str(fp), caption=caption, use_container_width=True)
+            else:
+                st.warning(f"Figure {fname} not found. "
+                           f"Run `python scripts/run_appendix_g.py`.")
