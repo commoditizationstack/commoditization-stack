@@ -179,37 +179,40 @@ LEVER_GROUPS: List[LeverGroup] = [
                 "kind": "slider", "min": 0.0, "max": 1.0, "step": 0.01,
                 "format": "%.2f",
             },
-        ] + [item for regime, regime_label in [
-                ("globalized_2020", "Globalized 2020"),
-                ("current_2026", "Current 2026"),
-                ("fragmented_2030", "Fragmented 2030"),
-            ] for item in [
-                {
+        ] + [item for regime, regime_label, expose_k in [
+                ("globalized_2020", "Globalized 2020", True),
+                ("current_2026", "Current 2026", False),
+                ("fragmented_2030", "Fragmented 2030", True),
+            ] for item in (
+                # K7 for current_2026 lives in the 🎯 Headline group above to
+                # avoid a duplicate-widget conflict.
+                ([{
                     "dot_path": f"knowledge_regimes.regimes.{regime}.K_coefficient",
                     "label": f"K7 — {regime_label}",
                     "description": "Reference K7 value for this regime.",
                     "kind": "slider", "min": 0.0, "max": 1.0, "step": 0.01,
                     "format": "%.2f",
-                },
-                {
-                    "dot_path": f"knowledge_regimes.regimes.{regime}.layer4_substitution_modulator",
-                    "label": f"Layer-4 modulator — {regime_label}",
-                    "description": (
-                        "How much K7 of this regime scales Layer-4 effective "
-                        "substitutability."),
-                    "kind": "slider", "min": 0.0, "max": 1.0, "step": 0.01,
-                    "format": "%.2f",
-                },
-                {
-                    "dot_path": f"knowledge_regimes.regimes.{regime}.layer5_judgment_bias_factor",
-                    "label": f"Layer-5 judgment bias — {regime_label}",
-                    "description": (
-                        "How much human judgment is needed for bloc-specific "
-                        "bias detection under this regime."),
-                    "kind": "slider", "min": 0.0, "max": 1.5, "step": 0.01,
-                    "format": "%.2f",
-                },
-            ]
+                }] if expose_k else []) + [
+                    {
+                        "dot_path": f"knowledge_regimes.regimes.{regime}.layer4_substitution_modulator",
+                        "label": f"Layer-4 modulator — {regime_label}",
+                        "description": (
+                            "How much K7 of this regime scales Layer-4 effective "
+                            "substitutability."),
+                        "kind": "slider", "min": 0.0, "max": 1.0, "step": 0.01,
+                        "format": "%.2f",
+                    },
+                    {
+                        "dot_path": f"knowledge_regimes.regimes.{regime}.layer5_judgment_bias_factor",
+                        "label": f"Layer-5 judgment bias — {regime_label}",
+                        "description": (
+                            "How much human judgment is needed for bloc-specific "
+                            "bias detection under this regime."),
+                        "kind": "slider", "min": 0.0, "max": 1.5, "step": 0.01,
+                        "format": "%.2f",
+                    },
+                ]
+            )
         ],
     },
 
@@ -536,7 +539,8 @@ LEVER_GROUPS: List[LeverGroup] = [
             "to position your own firm on the fragility map and to drive "
             "Figures 22, 23, 31–35, A.1, A.3."),
         "params": [
-            # NeuroCertify layer exposure
+            # NeuroCertify layer exposure (Layer 6 lives in the 🎯 Headline
+            # group above to avoid a duplicate-widget conflict).
             *[{
                 "dot_path": f"case_studies_dynamic.neurocertify.layer_exposure.{k}",
                 "label": f"NeuroCertify — {label}",
@@ -547,7 +551,6 @@ LEVER_GROUPS: List[LeverGroup] = [
                 ("layer_3_capability", "Layer 3 (capability)"),
                 ("layer_4_codified", "Layer 4 (codified)"),
                 ("layer_5_judgment", "Layer 5 (judgment)"),
-                ("layer_6_institutional", "Layer 6 (institutional)"),
             ]],
             # DataFlow layer exposure
             *[{

@@ -23,7 +23,7 @@ def _coerce(value, *, format: str):
     return int(value) if format == "%d" else float(value)
 
 
-def _render_slider(param):
+def _render_slider(param, *, group_id: str):
     fmt = param["format"]
     mn = _coerce(param["min"], format=fmt)
     mx = _coerce(param["max"], format=fmt)
@@ -34,12 +34,12 @@ def _render_slider(param):
         param["label"],
         min_value=mn, max_value=mx, value=current, step=step,
         format=fmt, help=param["description"],
-        key=f"lvr_{param['dot_path']}",
+        key=f"lvr_{group_id}_{param['dot_path']}",
     )
     return val, default
 
 
-def _render_number(param):
+def _render_number(param, *, group_id: str):
     fmt = param["format"]
     mn = _coerce(param["min"], format=fmt)
     mx = _coerce(param["max"], format=fmt)
@@ -50,7 +50,7 @@ def _render_number(param):
         param["label"],
         min_value=mn, max_value=mx, value=current, step=step,
         format=fmt, help=param["description"],
-        key=f"lvr_{param['dot_path']}",
+        key=f"lvr_{group_id}_{param['dot_path']}",
     )
     return val, default
 
@@ -98,8 +98,10 @@ def render():
             for i, param in enumerate(group["params"]):
                 with cols[i % 2]:
                     if param["kind"] == "slider":
-                        val, default = _render_slider(param)
+                        val, default = _render_slider(param,
+                                                        group_id=group["id"])
                     else:
-                        val, default = _render_number(param)
+                        val, default = _render_number(param,
+                                                        group_id=group["id"])
                     _record_change(param["dot_path"], val, default,
                                     format=param["format"])
