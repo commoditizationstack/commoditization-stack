@@ -50,13 +50,18 @@ def action_script(name: str) -> Callable[[], int]:
 
 
 def action_run_all_paper_figures() -> int:
-    """Sequence: deterministic → jurisdictional → layer7 → appendix A → B → equations."""
+    """Sequence: every paper figure from Sections 4–8 and Appendices A–G."""
     scripts = [
         "run_deterministic.py",
         "run_jurisdictional.py",
         "run_layer7.py",
         "run_appendix_a.py",
         "run_appendix_b.py",
+        "run_section_7_5_migration.py",
+        "run_appendix_d.py",
+        "run_appendix_e.py",
+        "run_appendix_f.py",
+        "run_appendix_g.py",
         "render_equations.py",
     ]
     for s in scripts:
@@ -94,17 +99,22 @@ def action_check_config() -> int:
 # (key, label, action). Order matters — these are the numbers shown to the user.
 MENU: List[Tuple[str, str, Callable[[], int]]] = [
     ("1", "Streamlit app (interactive, http://localhost:8501)", action_streamlit),
-    ("2", "Run all paper figures (deterministic + jurisdictional + layer7 + appendices)", action_run_all_paper_figures),
+    ("2", "Run all paper figures (every figure from Sections 4–8 + Appendices A–G)", action_run_all_paper_figures),
     ("3", "Monte Carlo ensemble (40k runs, ~30s)", action_monte_carlo),
-    ("4", "Deterministic figures only (fig1–fig7)", action_script("run_deterministic.py")),
+    ("4", "Deterministic figures (fig1–fig7)", action_script("run_deterministic.py")),
     ("5", "Jurisdictional figures (fig11–fig13, Brazil/France/US)", action_script("run_jurisdictional.py")),
     ("6", "Layer 7 / K7 sensitivity (fig14, fig15)", action_script("run_layer7.py")),
     ("7", "Appendix A — layered DCF (fig16–fig18)", action_script("run_appendix_a.py")),
     ("8", "Appendix B — two-phase WACC/EVA (fig19, fig20)", action_script("run_appendix_b.py")),
-    ("9", "Render appendix equations (PNG)", action_script("render_equations.py")),
-    ("10", "Run pytest test suite", action_pytest),
-    ("11", "Open Jupyter Lab on notebooks/", action_notebooks),
-    ("12", "Inspect parameters.yaml (list loaded sections)", action_check_config),
+    ("9", "Section 7.5 — Migration dynamics with AI orchestrator (fig21–fig23)", action_script("run_section_7_5_migration.py")),
+    ("10", "Appendix D — Streaming case + fiscal blocs (fig24–fig30)", action_script("run_appendix_d.py")),
+    ("11", "Appendix E — Dynamic case companies NC + DF (fig31–fig35)", action_script("run_appendix_e.py")),
+    ("12", "Appendix F — Upstream chain + sensitivities (fig36–fig39)", action_script("run_appendix_f.py")),
+    ("13", "Appendix G — Distributional + XAI capacity gap (fig40, fig41)", action_script("run_appendix_g.py")),
+    ("14", "Render appendix equations (PNG)", action_script("render_equations.py")),
+    ("15", "Run pytest test suite", action_pytest),
+    ("16", "Open Jupyter Lab on notebooks/", action_notebooks),
+    ("17", "Inspect parameters.yaml (list loaded sections)", action_check_config),
 ]
 
 
@@ -159,7 +169,7 @@ def main() -> int:
     while True:
         print_menu()
         try:
-            choice = input("Choose [1-12, q]: ").strip().lower()
+            choice = input("Choose [1-17, q]: ").strip().lower()
         except (EOFError, KeyboardInterrupt):
             print()
             return 0
