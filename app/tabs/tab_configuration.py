@@ -21,6 +21,10 @@ def _slider(label: str, dot_path: str, *,
             min_value: float, max_value: float, step: float,
             help: str = "", format: str = "%.3f") -> float:
     """Slider that reads override (if set) or YAML default."""
+    # Streamlit refuses mixed int/float bounds — coerce everything to float.
+    min_value = float(min_value)
+    max_value = float(max_value)
+    step = float(step)
     default = float(config.get(dot_path, min_value))
     current = float(state.get_override(dot_path, default))
     val = st.slider(label, min_value=min_value, max_value=max_value,
@@ -38,6 +42,10 @@ def _number(label: str, dot_path: str, *, help: str = "",
             min_value: float = 0.0, max_value: float = 1e15,
             step: float = 1.0, format: str = "%.0f") -> float:
     """Number input that reads override (if set) or YAML default."""
+    # Streamlit refuses mixed int/float bounds — coerce everything to float.
+    min_value = float(min_value)
+    max_value = float(max_value)
+    step = float(step)
     default = float(config.get(dot_path, min_value))
     current = float(state.get_override(dot_path, default))
     val = st.number_input(label, min_value=min_value, max_value=max_value,

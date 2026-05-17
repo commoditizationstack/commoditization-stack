@@ -2,11 +2,15 @@
 import streamlit as st
 from pathlib import Path
 
+from app.shared import live_figures, state
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 FIG_DIR = PROJECT_ROOT / "outputs" / "figures"
 
 
 def render(global_params: dict):
+    state.init_session_state()
+
     st.header("Appendix B — Two-Phase Reformulation of Canonical Formulas")
     st.markdown(
         """
@@ -47,7 +51,23 @@ def render(global_params: dict):
 
     st.markdown("---")
 
-    st.subheader("Numerical demonstration")
+    # ===== Live figures =====
+    p = state.effective_parameters()
+    st.markdown("---")
+    st.subheader("📈 Live figures")
+    st.caption("These plots update immediately when you edit firm-specific "
+                "phase parameters in ⚙️ Configuration → Case studies / Two-phase.")
+
+    st.markdown("#### B.1 — Two-phase cost-of-capital trajectory")
+    st.pyplot(live_figures.appendix_b_two_phase_cost_of_capital(parameters=p),
+                use_container_width=True)
+
+    st.markdown("#### B.2 — EVA trajectory: classical vs two-phase")
+    st.pyplot(live_figures.appendix_b_two_phase_eva_trajectory(parameters=p),
+                use_container_width=True)
+
+    st.markdown("---")
+    st.subheader("📷 Paper PNG snapshots")
     fig_titles = [
         ("fig19_two_phase_cost_of_capital.png",
          "Cost-of-capital trajectory by phase",
@@ -70,17 +90,16 @@ def render(global_params: dict):
         if fp.exists():
             st.image(str(fp), caption=caption, use_container_width=True)
         else:
-            st.warning(f"Figure {fname} missing. Run scripts/run_appendix_b.py.")
+            st.warning(f"Figure `{fname}` not yet generated.")
 
     st.markdown("---")
 
     st.markdown(
         """
-        ### Run with custom phase parameters
-        ```bash
-        python scripts/run_appendix_b.py
-        ```
-        Edit the `PhaseParameters` dataclass in `src/valuation_two_phase.py`
-        to set custom beta jumps, D/E shifts, and Kd spreads for each phase.
+        ### Recalibrate two-phase parameters
+        Use ⚙️ **Configuration → Two-phase CAPM/WACC (Appendix B)** to set
+        custom per-phase betas, D/E ratios, and Kd spreads. The case-study
+        firms (NeuroCertify, DataFlow Pro) inherit their phase boundaries
+        from the same panel.
         """
     )

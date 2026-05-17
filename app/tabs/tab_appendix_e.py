@@ -105,7 +105,7 @@ def render(global_params: dict):
                               "(orchestrator overhead > gross saving).",
                       use_container_width=True)
         else:
-            st.warning("Figure not found. Run `python scripts/run_section_7_5_migration.py`.")
+            st.warning("Figure not yet generated.")
 
     with df_tab:
         st.markdown("#### DataFlow Pro migration (3 scenarios)")
@@ -115,7 +115,7 @@ def render(global_params: dict):
                       caption="All scenarios reach break-even within 5y.",
                       use_container_width=True)
         else:
-            st.warning("Figure not found. Run `python scripts/run_section_7_5_migration.py`.")
+            st.warning("Figure not yet generated.")
 
     with joint_tab:
         for fname, title in [
@@ -130,5 +130,4 @@ def render(global_params: dict):
                 if fp.exists():
                     st.image(str(fp), use_container_width=True)
                 else:
-                    st.warning(f"Figure {fname} not found. "
-                               f"Run `python scripts/run_appendix_e.py`.")
+                    st.warning(f"Figure `{fname}` not yet generated.")

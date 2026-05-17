@@ -611,3 +611,355 @@ def xai_capacity_gap(*, x: "XAICapacityGapData") -> plt.Figure:
     ax.grid(True, linestyle=":", alpha=0.4)
     ax.set_axisbelow(True)
     return fig
+
+
+# ===========================================================================
+# Appendix A — Layered DCF (live)
+# ===========================================================================
+#
+# These helpers consume the parameter overlay directly so the user's edits
+# in ⚙️ Configuration (or via Scenario YAML upload) flow straight through to
+# the plots. They compute simplified versions of the figures from the paper
+# without Monte Carlo bands (kept synchronous so they redraw in < 1 s).
+
+NC_COLOR = "#0B6E4F"
+DF_COLOR = "#C44536"
+
+
+def _classical_capm(*, rf: float, beta: float, erp: float) -> float:
+    return rf + beta * erp
+
+
+def _layered_yearly_rate(*, rf: float, beta: float, erp: float,
+                          trl_for_year: int,
+                          trl_premium_schedule: Dict[int, float],
+                          layer_exposure: Dict[str, float],
+                          layer_risk_coefficients: Dict[str, float]) -> float:
+    """Base CAPM + TRL premium + Σ (exposure_l × risk_coefficient_l)."""
+    base = _classical_capm(rf=rf, beta=beta, erp=erp)
+    trl_p = float(trl_premium_schedule.get(int(trl_for_year), 0.0))
+    layer_p = sum(float(layer_exposure.get(k, 0.0))
+                  * float(layer_risk_coefficients.get(k, 0.0))
+                  for k in layer_risk_coefficients)
+    return base + trl_p + layer_p
+
+
+def appendix_a_trl_trajectory(*, parameters: Dict) -> plt.Figure:
+    """A.1 — TRL × discount rate trajectory (live)."""
+    macro = parameters["firms_appendix_b"]["macro"]
+    rf = float(macro["risk_free_rate"])
+    erp = float(macro["equity_risk_premium"])
+    trl_sched_raw = parameters["valuation_layered"]["trl_discount_premium"]
+    trl_sched = {int(k): float(v) for k, v in trl_sched_raw.items()}
+    coeffs = parameters["valuation_layered"]["layer_risk_coefficients"]
+    cs = parameters["case_studies_dynamic"]
+
+    fig, ax = plt.subplots(figsize=(10, 5.6))
+
+    for firm_key, color, marker in [("neurocertify", NC_COLOR, "o"),
+                                       ("dataflow_pro", DF_COLOR, "s")]:
+        firm = cs[firm_key]
+        trls = firm["trl_trajectory"]
+        beta = float(parameters["firms_appendix_b"][
+            "dataflow" if firm_key == "dataflow_pro" else firm_key
+        ]["phases"]["beta_unlevered_phase_3"])
+        layer_exp = firm["layer_exposure"]
+        years = [f"Y{i+1}" for i in range(len(trls))]
+        rates = [_layered_yearly_rate(
+            rf=rf, beta=beta, erp=erp,
+            trl_for_year=t,
+            trl_premium_schedule=trl_sched,
+            layer_exposure=layer_exp,
+            layer_risk_coefficients=coeffs,
+        ) * 100 for t in trls]
+        classical_rate = _classical_capm(rf=rf, beta=beta, erp=erp) * 100
+
+        x = np.arange(len(years))
+        label = firm.get("label", firm_key)
+        ax.plot(x, rates, marker=marker, linewidth=2.4, color=color,
+                label=f"{label} — layered (TRL-modulated)")
+        ax.axhline(classical_rate, linestyle="--", color=color, alpha=0.55,
+                   label=f"{label} — classical Damodaran ({classical_rate:.1f}%)")
+        for i, trl in enumerate(trls):
+            ax.annotate(f"TRL {trl}", (i, rates[i]),
+                          textcoords="offset points", xytext=(0, 8),
+                          ha="center", fontsize=8, color=color)
+        ax.set_xticks(x)
+        ax.set_xticklabels(years)
+
+    ax.set_xlabel("Year")
+    ax.set_ylabel("Discount rate (%)")
+    ax.set_title("Appendix A.1 — TRL-modulated discount rate trajectory (live)",
+                 fontsize=10, pad=8)
+    ax.grid(True, linestyle=":", alpha=0.5)
+    ax.set_axisbelow(True)
+    ax.legend(loc="lower left", fontsize=8.5, framealpha=0.92)
+    fig.tight_layout()
+    return fig
+
+
+def appendix_a_layer_risk_decomposition(*, parameters: Dict) -> plt.Figure:
+    """A.2 — Layer-decomposed firm-specific risk premium (live)."""
+    coeffs = parameters["valuation_layered"]["layer_risk_coefficients"]
+    cs = parameters["case_studies_dynamic"]
+
+    layer_keys = ["layer_1_infra", "layer_2_foundation", "layer_3_capability",
+                   "layer_4_codified", "layer_5_judgment",
+                   "layer_6_institutional", "layer_7_crossborder"]
+    labels = ["L1 Infra", "L2 Foundation", "L3 Capability",
+              "L4 Codified", "L5 Judgment", "L6 Institutional",
+              "L7 Crossborder"]
+
+    def contributions(firm: Dict) -> List[float]:
+        exp = firm["layer_exposure"]
+        return [float(exp.get(k, 0.0)) * float(coeffs.get(k, 0.0)) * 100
+                for k in layer_keys]
+
+    nc_vals = contributions(cs["neurocertify"])
+    df_vals = contributions(cs["dataflow_pro"])
+
+    fig, ax = plt.subplots(figsize=(10.5, 5.8))
+    y = np.arange(len(labels))
+    w = 0.36
+    bars_n = ax.barh(y - w/2, nc_vals, w, color=NC_COLOR,
+                       label=cs["neurocertify"].get("label", "NeuroCertify"),
+                       edgecolor="black", linewidth=0.4)
+    bars_d = ax.barh(y + w/2, df_vals, w, color=DF_COLOR,
+                       label=cs["dataflow_pro"].get("label", "DataFlow Pro"),
+                       edgecolor="black", linewidth=0.4)
+    for bar, val in list(zip(bars_n, nc_vals)) + list(zip(bars_d, df_vals)):
+        x_pos = bar.get_width()
+        ha = "left" if x_pos >= 0 else "right"
+        offset = 0.05 if x_pos >= 0 else -0.05
+        ax.text(x_pos + offset, bar.get_y() + bar.get_height()/2,
+                f"{val:+.2f}pp", va="center", ha=ha, fontsize=8)
+    ax.set_yticks(y)
+    ax.set_yticklabels(labels)
+    ax.axvline(0, color="black", linewidth=0.8)
+    ax.invert_yaxis()
+    ax.set_xlabel("Contribution to firm-specific risk premium (pp)")
+    ax.set_title("Appendix A.2 — Layer-decomposed risk premium (live)",
+                 fontsize=10, pad=8)
+    ax.grid(True, axis="x", linestyle=":", alpha=0.5)
+    ax.set_axisbelow(True)
+    ax.legend(loc="lower right", fontsize=8.5, framealpha=0.92)
+    fig.tight_layout()
+    return fig
+
+
+def appendix_a_valuation_comparison(*, parameters: Dict) -> plt.Figure:
+    """A.3 — Enterprise value: classical Damodaran vs layered DCF (live)."""
+    macro = parameters["firms_appendix_b"]["macro"]
+    rf = float(macro["risk_free_rate"])
+    erp = float(macro["equity_risk_premium"])
+    g = float(macro.get("terminal_growth", 0.03))
+    trl_sched_raw = parameters["valuation_layered"]["trl_discount_premium"]
+    trl_sched = {int(k): float(v) for k, v in trl_sched_raw.items()}
+    coeffs = parameters["valuation_layered"]["layer_risk_coefficients"]
+    cs = parameters["case_studies_dynamic"]
+
+    def ev_pair(firm: Dict, firms_b_key: str) -> Tuple[float, float]:
+        fcfs = [float(x) * 1e6 for x in firm["fcf_usd_millions"]]
+        trls = firm["trl_trajectory"]
+        layer_exp = firm["layer_exposure"]
+        beta = float(parameters["firms_appendix_b"][firms_b_key]
+                      ["phases"]["beta_unlevered_phase_3"])
+        classical = _classical_capm(rf=rf, beta=beta, erp=erp)
+        layered_rates = [_layered_yearly_rate(
+            rf=rf, beta=beta, erp=erp,
+            trl_for_year=t,
+            trl_premium_schedule=trl_sched,
+            layer_exposure=layer_exp,
+            layer_risk_coefficients=coeffs,
+        ) for t in trls]
+
+        # Classical DCF: single rate, terminal at year T
+        pv_c = sum(f / (1 + classical) ** (i + 1) for i, f in enumerate(fcfs))
+        tv_c = (fcfs[-1] * (1 + g) / max(classical - g, 1e-6)
+                / (1 + classical) ** len(fcfs))
+        ev_classical = pv_c + tv_c
+
+        # Layered DCF: compounded discount factors, year-by-year
+        pv_l = 0.0
+        cum = 1.0
+        for rate, fcf in zip(layered_rates, fcfs):
+            cum *= (1 + rate)
+            pv_l += fcf / cum
+        drag = float(firm.get("second_valley_drag", 0.0))
+        last_rate = layered_rates[-1]
+        if last_rate > g:
+            tv_l = fcfs[-1] * (1 + g) / (last_rate - g) * (1 - drag) / cum
+        else:
+            tv_l = 0.0
+        ev_layered = pv_l + tv_l
+        return ev_classical, ev_layered
+
+    nc_c, nc_l = ev_pair(cs["neurocertify"], "neurocertify")
+    df_c, df_l = ev_pair(cs["dataflow_pro"], "dataflow")
+
+    fig, ax = plt.subplots(figsize=(10, 5.6))
+    x = np.arange(2)
+    w = 0.32
+    classical_vals = [nc_c / 1e6, df_c / 1e6]
+    layered_vals = [nc_l / 1e6, df_l / 1e6]
+    bars_c = ax.bar(x - w/2, classical_vals, w, color="#7B7D7D",
+                      label="Classical Damodaran (single rate)",
+                      edgecolor="black", linewidth=0.4)
+    bars_l = ax.bar(x + w/2, layered_vals, w,
+                      color=[NC_COLOR, DF_COLOR],
+                      label="Layered seven-layer DCF",
+                      edgecolor="black", linewidth=0.4)
+    for bar, val in zip(bars_c, classical_vals):
+        ax.text(bar.get_x() + bar.get_width()/2, val + max(classical_vals + layered_vals) * 0.02,
+                f"${val:.1f}M", ha="center", fontsize=9.5)
+    for bar, val in zip(bars_l, layered_vals):
+        ax.text(bar.get_x() + bar.get_width()/2, val + max(classical_vals + layered_vals) * 0.02,
+                f"${val:.1f}M", ha="center", fontsize=9.5, fontweight="bold")
+    ax.set_xticks(x)
+    ax.set_xticklabels([cs["neurocertify"].get("label", "NeuroCertify"),
+                         cs["dataflow_pro"].get("label", "DataFlow Pro")])
+    ax.set_ylabel("Enterprise Value (USD millions)")
+    ax.set_title("Appendix A.3 — Enterprise value: classical vs layered DCF (live)",
+                 fontsize=10, pad=8)
+    ax.grid(True, axis="y", linestyle=":", alpha=0.5)
+    ax.set_axisbelow(True)
+    ax.legend(loc="upper right", fontsize=9)
+    fig.tight_layout()
+    return fig
+
+
+# ===========================================================================
+# Appendix B — Two-phase CAPM / WACC / EVA (live)
+# ===========================================================================
+
+def _two_phase_wacc(*, year: int, rf: float, erp: float,
+                     phases: Dict) -> Dict[str, float]:
+    p1_end = int(phases["phase_1_end_year"])
+    p2_end = int(phases["phase_2_end_year"])
+    if year <= p1_end:
+        suffix = "phase_1"
+    elif year <= p2_end:
+        suffix = "phase_2"
+    else:
+        suffix = "phase_3"
+    beta_u = float(phases[f"beta_unlevered_{suffix}"])
+    de = float(phases[f"de_ratio_{suffix}"])
+    kd_spread = float(phases[f"kd_spread_{suffix}"])
+    tax = float(phases["effective_tax_rate"])
+    beta_l = beta_u * (1.0 + (1.0 - tax) * de)
+    ke = rf + beta_l * erp
+    kd = rf + kd_spread
+    d_v = de / (1.0 + de)
+    e_v = 1.0 / (1.0 + de)
+    wacc = e_v * ke + d_v * kd * (1.0 - tax)
+    return {"wacc": wacc, "ke": ke, "phase": suffix}
+
+
+def appendix_b_two_phase_cost_of_capital(*, parameters: Dict) -> plt.Figure:
+    """B.1 — Two-phase WACC and Ke trajectory for both case companies (live)."""
+    macro = parameters["firms_appendix_b"]["macro"]
+    rf = float(macro["risk_free_rate"])
+    erp = float(macro["equity_risk_premium"])
+
+    fig, axes = plt.subplots(1, 2, figsize=(11, 5.4))
+
+    for ax, firm_key, color in [(axes[0], "neurocertify", NC_COLOR),
+                                  (axes[1], "dataflow", DF_COLOR)]:
+        phases = parameters["firms_appendix_b"][firm_key]["phases"]
+        label = parameters["firms_appendix_b"][firm_key].get(
+            "label", firm_key.title())
+        n_years = int(phases["phase_2_end_year"]) + 1
+        years = list(range(1, n_years + 1))
+        wacc_traj = []
+        ke_traj = []
+        for yr in years:
+            comp = _two_phase_wacc(year=yr, rf=rf, erp=erp, phases=phases)
+            wacc_traj.append(comp["wacc"] * 100)
+            ke_traj.append(comp["ke"] * 100)
+        # Classical: use phase-3 (terminal) values as the single-rate reference
+        classical = _two_phase_wacc(year=n_years, rf=rf, erp=erp, phases=phases)
+        classical_wacc = classical["wacc"] * 100
+
+        # Background shading for phases
+        p1_end = int(phases["phase_1_end_year"])
+        p2_end = int(phases["phase_2_end_year"])
+        ax.axvspan(0.5, p1_end + 0.5, color="#EEEEEE", alpha=0.5)
+        ax.axvspan(p1_end + 0.5, p2_end + 0.5, color="#F4CFCF", alpha=0.5)
+        ax.axvspan(p2_end + 0.5, n_years + 0.5, color="#D6EAD6", alpha=0.5)
+        ax.text(0.5 + p1_end / 2, ax.get_ylim()[1] if False else 9.0,
+                "Phase 1 (growth)", fontsize=8, color="#666",
+                ha="center", style="italic")
+
+        ax.plot(years, wacc_traj, marker="o", color=color, linewidth=2.2,
+                label="Two-phase WACC")
+        ax.plot(years, ke_traj, marker="s", linestyle="--", color=color,
+                linewidth=1.6, alpha=0.85, label="Two-phase Ke")
+        ax.axhline(classical_wacc, linestyle=":", color="#444", linewidth=1.2,
+                   label=f"Classical single-rate WACC ({classical_wacc:.2f}%)")
+        ax.set_title(label, fontsize=10)
+        ax.set_xlabel("Year")
+        ax.set_ylabel("Cost of capital (%)")
+        ax.grid(True, linestyle=":", alpha=0.5)
+        ax.set_axisbelow(True)
+        ax.legend(fontsize=8, loc="lower right", framealpha=0.92)
+
+    fig.suptitle("Appendix B.1 — Two-phase cost of capital (live)",
+                 fontsize=11, y=1.02)
+    fig.tight_layout()
+    return fig
+
+
+def appendix_b_two_phase_eva_trajectory(*, parameters: Dict) -> plt.Figure:
+    """B.2 — EVA: phase-conditional WACC vs classical single-WACC (live)."""
+    macro = parameters["firms_appendix_b"]["macro"]
+    rf = float(macro["risk_free_rate"])
+    erp = float(macro["equity_risk_premium"])
+
+    fig, axes = plt.subplots(1, 2, figsize=(11, 5.4))
+    for ax, firm_key, color in [(axes[0], "neurocertify", NC_COLOR),
+                                  (axes[1], "dataflow", DF_COLOR)]:
+        firm = parameters["firms_appendix_b"][firm_key]
+        phases = firm["phases"]
+        label = firm.get("label", firm_key.title())
+        nopat = list(firm.get("nopat_usd", []))
+        ic = list(firm.get("invested_capital_usd", []))
+        n = min(len(nopat), len(ic))
+        years = list(range(1, n + 1))
+        eva_two_phase = []
+        eva_classical = []
+        classical = _two_phase_wacc(year=n, rf=rf, erp=erp, phases=phases)["wacc"]
+        for yr in years:
+            wacc = _two_phase_wacc(year=yr, rf=rf, erp=erp, phases=phases)["wacc"]
+            eva_two_phase.append(
+                (nopat[yr - 1] - wacc * ic[yr - 1]) / 1e6)
+            eva_classical.append(
+                (nopat[yr - 1] - classical * ic[yr - 1]) / 1e6)
+
+        x = np.arange(len(years))
+        w = 0.36
+        bars_c = ax.bar(x - w/2, eva_classical, w, color="#7B7D7D",
+                          label="Classical single-WACC EVA",
+                          edgecolor="black", linewidth=0.4)
+        bars_p = ax.bar(x + w/2, eva_two_phase, w, color=color,
+                          label="Two-phase EVA",
+                          edgecolor="black", linewidth=0.4)
+        for bar, val in list(zip(bars_c, eva_classical)) + list(zip(bars_p, eva_two_phase)):
+            offset = 0.1 if val >= 0 else -0.1
+            ax.text(bar.get_x() + bar.get_width() / 2,
+                    val + offset,
+                    f"${val:.1f}M", ha="center", fontsize=8,
+                    va="bottom" if val >= 0 else "top")
+        ax.axhline(0, color="black", linewidth=0.6)
+        ax.set_xticks(x)
+        ax.set_xticklabels([str(y) for y in years])
+        ax.set_xlabel("Year")
+        ax.set_ylabel("EVA (USD millions)")
+        ax.set_title(label, fontsize=10)
+        ax.grid(True, axis="y", linestyle=":", alpha=0.5)
+        ax.set_axisbelow(True)
+        ax.legend(fontsize=8, loc="upper left", framealpha=0.92)
+
+    fig.suptitle("Appendix B.2 — EVA trajectory: classical vs two-phase (live)",
+                 fontsize=11, y=1.02)
+    fig.tight_layout()
+    return fig

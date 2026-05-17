@@ -81,5 +81,4 @@ def render(global_params: dict):
             if fp.exists():
                 st.image(str(fp), caption=caption, use_container_width=True)
             else:
-                st.warning(f"Figure {fname} not found. "
-                           f"Run `python scripts/run_section_7_5_migration.py`.")
+                st.warning(f"Figure `{fname}` not yet generated.")

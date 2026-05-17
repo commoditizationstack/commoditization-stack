@@ -131,4 +131,4 @@ def render(global_params: dict):
                  "jurisdictions, with cross-bloc acquisition variant.",
                  use_container_width=True)
     else:
-        st.info("Run scripts/run_layer7.py to regenerate this figure.")
+        st.info("Reference PNG not yet generated.")

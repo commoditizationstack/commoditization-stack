@@ -167,6 +167,144 @@ PARAMETER_SECTIONS_TO_INCLUDE = [
 ]
 
 
+# Short, human-readable description for each parameter section.
+SECTION_DESCRIPTIONS: Dict[str, str] = {
+    "simulation": "Core simulation controls: random seed, Monte-Carlo run count, "
+                  "and the simulation horizon in quarters.",
+    "monte_carlo": "Coefficients of variation (log-normal envelopes) that perturb "
+                   "team size, burn rate, AI substitution, market multiple and "
+                   "layer velocities across Monte-Carlo iterations.",
+    "stack_layers": "Section 4 — definition of the seven-layer knowledge-production "
+                    "stack: each layer's commoditization velocity and its 2026 "
+                    "substitutability starting value.",
+    "knowledge_regimes": "Section 4.1 — the cross-border knowledge-integration "
+                         "coefficient K7 under three reference regimes "
+                         "(globalized 2020, current 2026, fragmented 2030) and "
+                         "the cross-border friction it implies.",
+    "startup": "Reference startup used in the canonical simulation: team size, "
+               "burn rate, funding events, growth dynamics, and substitution "
+               "potential of its Layer-4 work.",
+    "investor": "Investor scoring framework: thesis weights (classical vs "
+                "AI-aware), target IRR, hold period and decision threshold.",
+    "valuation": "Section 6 — classical valuation parameters: Damodaran's "
+                 "key-person discount (and its inverted variant), Berkus, VC "
+                 "method and comparable-multiples constants.",
+    "valuation_layered": "Appendix A — layered DCF inputs: TRL premium schedule, "
+                         "per-layer risk coefficients, default layer exposure, "
+                         "and US funding-stage benchmarks.",
+    "valuation_two_phase": "Appendix B — default two-phase CAPM/WACC parameters: "
+                            "phase boundaries, per-phase β, D/E and Kd spreads, "
+                            "and effective tax rate.",
+    "firms_appendix_b": "Appendix B — firm-specific two-phase calibration for the "
+                         "two case studies (NeuroCertify, DataFlow Pro): industry "
+                         "betas, capital structure trajectory and free cash flows.",
+    "jurisdictions": "Section 7 — fiscal-accounting parameters per jurisdiction "
+                      "(Brazil/CLT, France/CDI, United States/W-2): labor "
+                      "multiplier, termination cost, AI-service overhead and "
+                      "vendor-risk WACC premium.",
+    "hype_cycle": "Section 6.5 — quarterly coordinates of the classical Hype Cycle "
+                   "and the post-GenAI double-valley variant.",
+    "death_valley": "Section 6.5 — cash-trajectory parameters under classical and "
+                     "post-GenAI regimes (burn, refinancing, valley boundaries).",
+    "migration_dynamics": "Section 7.5 — quarter-by-quarter migration model: "
+                           "assessment phase, AI orchestrator overhead, learning "
+                           "curve, retention bonus and per-jurisdiction loaded "
+                           "costs.",
+    "streaming_case": "Appendix D — streaming incumbent case study: revenue, "
+                       "plan price, cost decomposition, three substitution "
+                       "scenarios and cross-bloc friction.",
+    "fiscal_blocs": "Appendix D.6 — 5-year jurisdictional fiscal impact: lost "
+                     "social charges, AI-token export, compensating corporate-"
+                     "tax gain, and transfer-pricing shares.",
+    "fragility_index": "Appendix E.5 — fragility-index formula constants "
+                        "(L6 coefficient, resilient/fragile thresholds, color "
+                        "scale).",
+    "upstream_chain": "Appendix F — seven upstream-AI firm categories mapped "
+                       "onto the seven layers, plus capex-sensitivity grid "
+                       "parameters.",
+    "distributional": "Appendix G — distributional / epistemic dimensions: "
+                       "double threshold for institution-dominant firms and "
+                       "XAI capacity-gap trajectories under three K7 regimes.",
+    "case_studies_dynamic": "Appendix E — dynamic calibration of the two case "
+                             "companies: TRL trajectory, free cash flows, layer "
+                             "exposure, β trajectory and migration scenarios.",
+    "macro": "Macroeconomic constants used across modules: risk-free rate, "
+              "equity risk premium and terminal growth rate.",
+    "funding_stages_carta": "Carta Q3 2025 benchmarks: round size, pre-money "
+                              "median, typical dilution and expected investor "
+                              "multiple by stage.",
+    "streamlit_ui": "UI defaults for the simulator: slider ranges, default firm "
+                     "profiles and tab-specific display parameters. These do "
+                     "not affect simulation outputs.",
+    "structural": "Rarely-tuned structural constants: stack-layer logit scaling "
+                   "and substitutability clip bounds.",
+}
+
+
+# Per-paper-section context for the Figures chapter. Keys must match the
+# leading entries used in FIGURE_MANIFEST.
+FIGURE_SECTION_DESCRIPTIONS: Dict[str, str] = {
+    "Section 4 — Seven-layer framework":
+        "How fast each layer of the knowledge-production stack is being "
+        "commoditized by AI, and where each layer stands in 2026.",
+    "Section 4.1 — K7 / Layer 7":
+        "The cross-border knowledge-integration regime — a hypothetical seventh "
+        "layer that modulates Layer-4 substitutability and the relative value "
+        "of Layer-5 judgment as integration falls.",
+    "Section 6.4 — Inverted key-person discount":
+        "How a high Layer-4 team share combined with high AI substitution "
+        "potential flips Damodaran's classical key-person discount into an "
+        "acquisition premium.",
+    "Section 6.5 — Hype Cycle & valleys":
+        "The post-GenAI double-valley dynamic: a second commoditization valley "
+        "appears after the classical trough, with material consequences for "
+        "cash trajectories, ARR and exit valuations.",
+    "Section 7 — Jurisdictional substitution":
+        "Monte-Carlo distribution of survival and valuation outcomes across "
+        "four scenarios; distribution of the key-person inversion premium.",
+    "Section 7.3 — Counterintuitive ordering":
+        "When the inversion regime is active, the magnitude of the premium "
+        "scales with the cost-of-labor base — putting the United States ahead "
+        "of France and Brazil despite higher headline costs.",
+    "Section 7.4 — Cross-border M&A":
+        "Operating-cost basis comparison when an acquirer reproduces the "
+        "target's economic activity from its own jurisdiction vs holding the "
+        "team locally.",
+    "Section 7.5 — Migration dynamics":
+        "Quarterly cash-flow trajectory under the AI orchestrator model: "
+        "assessment phase, dual operation, learning curve and steady state, "
+        "across reference firm and the two case companies.",
+    "Appendix A — Layered DCF":
+        "Layered DCF demonstration on NeuroCertify and DataFlow Pro: TRL "
+        "discount trajectory, layer-decomposed firm-specific risk premium, and "
+        "enterprise value vs the classical Damodaran benchmark.",
+    "Appendix B — Two-phase CAPM/WACC":
+        "Numerical demonstration of the phase-conditional reformulation: how "
+        "WACC, Ke and EVA trajectories differ from their classical "
+        "single-rate counterparts.",
+    "Appendix D — Streaming case":
+        "Mature streaming incumbent vs IA-native entrant: price decomposition, "
+        "cross-jurisdictional pricing, capital trajectory, phase-conditional "
+        "risk, founder dilution and the strategic payoff matrix.",
+    "Appendix D — Fiscal blocs":
+        "5-year jurisdictional fiscal impact decomposition: lost social "
+        "charges, AI-token export, and compensating corporate-tax gain across "
+        "Brazil, France and the United States.",
+    "Appendix E — Dynamic case companies":
+        "Combined view of NeuroCertify and DataFlow Pro: migration cash flow, "
+        "capital trajectory, phase-conditional risk curves, founder dilution "
+        "and the L4 × L6 fragility map.",
+    "Appendix F — Upstream chain":
+        "Mapping of seven categories of upstream AI value-chain firms onto the "
+        "seven-layer framework, with the three structural sensitivities the "
+        "framework illuminates and the recovery-composition asymmetries.",
+    "Appendix G — Distributional + epistemic":
+        "Double threshold for AI migration in regulated small firms, and the "
+        "XAI capacity-gap accumulation across two reference blocs under three "
+        "K7 regimes.",
+}
+
+
 # ----------------------------------------------------------------------------
 # Style sheet
 # ----------------------------------------------------------------------------
@@ -199,6 +337,29 @@ def _build_styles() -> Dict[str, ParagraphStyle]:
         "meta": ParagraphStyle("meta", parent=styles["Normal"],
                                 fontSize=10, leading=14, alignment=TA_CENTER,
                                 textColor=colors.HexColor("#555555")),
+        # Used inside the parameter tables — character-level word-wrap so long
+        # dot-paths break cleanly instead of overflowing into the value column.
+        "table_path": ParagraphStyle("table_path", parent=styles["Normal"],
+                                       fontSize=7, leading=8.5,
+                                       wordWrap="CJK",
+                                       textColor=colors.HexColor("#1A1A1A")),
+        "table_value": ParagraphStyle("table_value", parent=styles["Normal"],
+                                        fontSize=7, leading=8.5,
+                                        wordWrap="CJK",
+                                        textColor=colors.HexColor("#1A1A1A")),
+        # Caption used in the figures chapter — left-aligned, slightly larger
+        # than the table cells, with room for an interpretation line below.
+        "fig_caption": ParagraphStyle("fig_caption", parent=styles["Normal"],
+                                        fontSize=8.5, leading=11,
+                                        alignment=TA_CENTER,
+                                        textColor=colors.HexColor("#444444"),
+                                        spaceAfter=8),
+        # Per-section explainer above each parameter table / figure group.
+        "intro": ParagraphStyle("intro", parent=styles["Normal"],
+                                  fontSize=9, leading=12,
+                                  alignment=TA_JUSTIFY,
+                                  textColor=colors.HexColor("#444444"),
+                                  spaceAfter=6),
     }
 
 
@@ -280,82 +441,176 @@ def _flatten_params(data: Dict, prefix: str = "") -> List[Tuple[str, str]]:
     return out
 
 
+def _escape(text: str) -> str:
+    return (str(text)
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;"))
+
+
 def _parameter_tables(styles, *, parameters: Dict[str, Any],
                        overrides: Dict[str, Any]) -> List:
-    """Build per-section tables of every parameter with override indicator."""
-    elements = [Paragraph("Complete parameter table", styles["h1"])]
+    """Build per-section tables of every parameter with override indicator.
+
+    Long dot-paths are wrapped via Paragraph (CJK word-wrap) so they never
+    overflow into the value column. Each section starts with a 1-2 sentence
+    description; the header is bundled with the first chunk via KeepTogether
+    so headings never become orphans on a page break.
+    """
+    elements: List = [Paragraph("Complete parameter table", styles["h1"])]
     elements.append(Paragraph(
-        f"Every numeric parameter in the simulation under the current overlay. "
-        f"Variables modified by the user are flagged ★. "
+        f"Every numeric parameter consumed by the simulation under the "
+        f"current parameter overlay. Each section below corresponds to a "
+        f"part of <i>The Cost Gradient of the Build</i>; the brief intro "
+        f"under each heading points to that part. Variables modified by "
+        f"the user are flagged with ★ in the rightmost column. "
         f"Total active overrides: <b>{len(overrides)}</b>. "
-        f"💵 Monetary values in USD where applicable.",
+        f"💵 Monetary values are in USD where applicable.",
         styles["body"]))
+
+    table_style = TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2C5282")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 8),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1),
+         [colors.HexColor("#FAFBFC"), colors.white]),
+        ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#DDDDDD")),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("ALIGN", (2, 1), (2, -1), "CENTER"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+    ])
+
+    col_widths = [9 * cm, 6.5 * cm, 1.4 * cm]
 
     for section in PARAMETER_SECTIONS_TO_INCLUDE:
         if section not in parameters:
             continue
-        elements.append(Paragraph(f"§ {section}", styles["h2"]))
+
+        header = Paragraph(f"§ {section}", styles["h2"])
+        intro_text = SECTION_DESCRIPTIONS.get(
+            section,
+            "Parameters that belong to this section of the framework.")
+        intro = Paragraph(intro_text, styles["intro"])
+
         rows = _flatten_params({section: parameters[section]})
-        table_data = [["Parameter", "Value", "Modified"]]
+        # Build rendered rows once
+        body_rows: List[List] = []
         for path, value in rows:
             modified = "★" if path in overrides else ""
-            display_value = value if len(value) <= 60 else value[:57] + "..."
-            table_data.append([path, display_value, modified])
-        # Split into pages of ~30 rows
-        chunk_size = 30
-        for chunk_start in range(1, len(table_data), chunk_size):
-            chunk = [table_data[0]] + table_data[chunk_start:chunk_start + chunk_size]
-            tbl = Table(chunk, colWidths=[8.5 * cm, 7 * cm, 1.5 * cm])
-            tbl.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2C5282")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 7.5),
-                ("FONTNAME", (0, 1), (0, -1), "Helvetica"),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1),
-                 [colors.HexColor("#FAFBFC"), colors.white]),
-                ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#DDDDDD")),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("ALIGN", (2, 1), (2, -1), "CENTER"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 4),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-                ("TOPPADDING", (0, 0), (-1, -1), 2),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
-            ]))
-            elements.append(tbl)
+            value_str = value if len(value) <= 90 else value[:87] + "..."
+            body_rows.append([
+                Paragraph(_escape(path), styles["table_path"]),
+                Paragraph(_escape(value_str), styles["table_value"]),
+                modified,
+            ])
+
+        # Header row reused across chunks
+        head = [
+            Paragraph("<b>Parameter</b>", styles["table_path"]),
+            Paragraph("<b>Value</b>", styles["table_value"]),
+            "Mod.",
+        ]
+
+        # Chunk into ~24 rows per slice; keep the section header glued to the
+        # first chunk so it never appears alone at the bottom of a page.
+        chunk_size = 24
+        chunks: List[List[List]] = []
+        for start in range(0, len(body_rows), chunk_size):
+            chunks.append(body_rows[start:start + chunk_size])
+        if not chunks:
+            chunks = [[]]
+
+        for i, chunk in enumerate(chunks):
+            tbl = Table([head] + chunk, colWidths=col_widths, repeatRows=1)
+            tbl.setStyle(table_style)
+            if i == 0:
+                elements.append(KeepTogether([header, intro, tbl]))
+            else:
+                elements.append(tbl)
             elements.append(Spacer(1, 4 * mm))
     elements.append(PageBreak())
     return elements
 
 
 def _figures_section(styles) -> List:
-    """All 41 figures, grouped by paper section."""
-    elements = [Paragraph("Figures from the framework", styles["h1"])]
+    """All available framework figures, grouped by paper section.
+
+    The section heading is bundled with its intro and first figure via
+    KeepTogether, so a heading never appears alone at the bottom of a
+    page. Every figure carries an italicised caption immediately beneath
+    it; figure + caption travel together to avoid orphan captions.
+    """
+    elements: List = [Paragraph("Figures from the framework", styles["h1"])]
     elements.append(Paragraph(
-        "All figures generated from the framework, grouped by paper section. "
-        "Each figure reflects the active parameter overlay at the moment of "
-        "generation. To regenerate any figure under your own scenario, run "
-        "<font face='Courier'>python main.py 2</font>.",
+        "Every figure the simulator currently generates, grouped by the "
+        "section of the paper it illustrates. The short paragraph under "
+        "each section heading sketches what the reader should look for; "
+        "below each image, the italicised line names the source PNG and "
+        "summarises the chart. All charts reflect the parameter overlay "
+        "active at the moment this report was built — to regenerate under "
+        "a different scenario, use the 🔄 Recalcular Tudo control in the "
+        "simulator sidebar.",
         styles["body"]))
 
-    current_section = None
+    # Group manifest by paper section so we can keep the heading with the
+    # first figure of each section.
+    grouped: Dict[str, List[Tuple[str, str]]] = {}
+    section_order: List[str] = []
     for section, fname, caption in FIGURE_MANIFEST:
-        fp = FIG_DIR / fname
-        if not fp.exists():
+        if section not in grouped:
+            grouped[section] = []
+            section_order.append(section)
+        grouped[section].append((fname, caption))
+
+    for section in section_order:
+        # Render every figure that exists on disk for this section.
+        rendered: List[Tuple[Image, str, str]] = []
+        for fname, caption in grouped[section]:
+            fp = FIG_DIR / fname
+            if not fp.exists():
+                continue
+            try:
+                img = Image(str(fp), width=16 * cm, height=10 * cm,
+                             kind="proportional")
+                rendered.append((img, fname, caption))
+            except Exception as exc:
+                elements.append(Paragraph(
+                    f"[Could not embed {fname}: {exc}]", styles["body"]))
+
+        if not rendered:
             continue
-        if section != current_section:
-            elements.append(Paragraph(section, styles["h2"]))
-            current_section = section
-        try:
-            img = Image(str(fp), width=16 * cm, height=10 * cm, kind="proportional")
+
+        header = Paragraph(section, styles["h2"])
+        intro_text = FIGURE_SECTION_DESCRIPTIONS.get(
+            section, "Reference figures for this section of the paper.")
+        intro = Paragraph(intro_text, styles["intro"])
+
+        # Glue header + intro + the first figure block together so the heading
+        # never sits alone at the bottom of a page.
+        first_img, first_fname, first_caption = rendered[0]
+        first_block: List = [
+            header,
+            intro,
+            first_img,
+            Paragraph(f"<i>{first_fname}</i> — {first_caption}",
+                       styles["fig_caption"]),
+        ]
+        elements.append(KeepTogether(first_block))
+        elements.append(Spacer(1, 4 * mm))
+
+        # Remaining figures: each kept together with its own caption.
+        for img, fname, caption in rendered[1:]:
             elements.append(KeepTogether([
                 img,
-                Paragraph(f"<i>{fname}</i> — {caption}", styles["caption"]),
-                Spacer(1, 4 * mm),
+                Paragraph(f"<i>{fname}</i> — {caption}",
+                           styles["fig_caption"]),
             ]))
-        except Exception as e:
-            elements.append(Paragraph(
-                f"[Could not embed {fname}: {e}]", styles["body"]))
+            elements.append(Spacer(1, 4 * mm))
+
     elements.append(PageBreak())
     return elements
 

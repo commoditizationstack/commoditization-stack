@@ -2,11 +2,15 @@
 import streamlit as st
 from pathlib import Path
 
+from app.shared import live_figures, state
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 FIG_DIR = PROJECT_ROOT / "outputs" / "figures"
 
 
 def render(global_params: dict):
+    state.init_session_state()
+
     st.header("Appendix A — Layered DCF for Two Case Companies")
     st.markdown(
         """
@@ -22,7 +26,29 @@ def render(global_params: dict):
         """
     )
 
-    st.subheader("Reference figures")
+    # ===== Live figures =====
+    p = state.effective_parameters()
+    st.markdown("---")
+    st.subheader("📈 Live figures")
+    st.caption("These three plots update immediately when you edit any input "
+                "in ⚙️ Configuration (firm phase β / D-E / Kd spreads, layer "
+                "exposure, TRL trajectory, FCF, layer risk coefficients).")
+
+    st.markdown("#### A.1 — TRL-modulated discount-rate trajectory")
+    st.pyplot(live_figures.appendix_a_trl_trajectory(parameters=p),
+                use_container_width=True)
+
+    st.markdown("#### A.2 — Layer-decomposed firm-specific risk premium")
+    st.pyplot(live_figures.appendix_a_layer_risk_decomposition(parameters=p),
+                use_container_width=True)
+
+    st.markdown("#### A.3 — Enterprise value: classical Damodaran vs layered DCF")
+    st.pyplot(live_figures.appendix_a_valuation_comparison(parameters=p),
+                use_container_width=True)
+
+    st.markdown("---")
+    st.subheader("📷 Paper PNG snapshots")
+    st.caption("Original figures from the paper for side-by-side comparison.")
 
     fig_titles = [
         ("fig16_trl_discount_trajectory.png",
@@ -52,25 +78,20 @@ def render(global_params: dict):
         if fp.exists():
             st.image(str(fp), caption=caption, use_container_width=True)
         else:
-            st.warning(f"Figure {fname} not found. Run scripts/run_appendix_a.py to generate.")
+            st.warning(f"Figure `{fname}` not yet generated.")
 
     st.markdown("---")
 
-    st.subheader("Run your own scenario")
     st.markdown(
         f"""
-        The current global parameters from the sidebar (K₇ = {global_params['K7']:.2f},
-        AI substitution potential = {global_params['ai_substitution_potential']:.2f},
-        Layer-4 share = {global_params['layer4_share']:.2f}, Layer-6 share =
-        {global_params['layer6_share']:.2f}) would produce results that
-        the user can replicate by running:
+        ### Current global parameters
+        - K₇ = {global_params['K7']:.2f}
+        - AI substitution potential = {global_params['ai_substitution_potential']:.2f}
+        - Layer-4 share = {global_params['layer4_share']:.2f}
+        - Layer-6 share = {global_params['layer6_share']:.2f}
 
-        ```bash
-        python scripts/run_appendix_a.py
-        ```
-
-        Editing `config/scenarios/neurocertify.yaml` or `config/scenarios/dataflow_pro.yaml`
-        allows full re-calibration of any of the layered-DCF parameters.
-        See `docs/EXTENDING.md` for the four levels of extension supported.
+        Edit every layered-DCF input in ⚙️ **Configuration → Layered DCF
+        (Appendix A)** to recalibrate TRL premium, layer risk coefficients,
+        and default layer exposure.
         """
     )

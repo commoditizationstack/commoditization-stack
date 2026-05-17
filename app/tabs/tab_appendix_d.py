@@ -105,5 +105,4 @@ def render(global_params: dict):
             if fp.exists():
                 st.image(str(fp), use_container_width=True)
             else:
-                st.warning(f"Figure {fname} not found. "
-                           f"Run `python scripts/run_appendix_d.py`.")
+                st.warning(f"Figure `{fname}` not yet generated.")
