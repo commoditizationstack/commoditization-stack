@@ -1,7 +1,7 @@
 """Tab Layers — visualization of K7 effect on Layers 4 and 5.
 
 All numeric knobs (modulation factor, collapse-threshold band, plot grid)
-come from config/parameters.yaml.
+come from the framework defaults under the active parameter overlay.
 """
 import streamlit as st
 import numpy as np
@@ -89,11 +89,10 @@ def render(global_params: dict):
 
     st.markdown("---")
 
-    # ---- Paper parameters (read-only) ----
-    with st.expander("📖 Paper parameters (read-only — edit config/parameters.yaml)"):
+    # ---- Paper parameters (read-only snapshot) ----
+    with st.expander("📖 Paper parameters (read-only — edit in 🔬 Research Levers)"):
         st.markdown(
-            "**Stack-layer velocities and substitutabilities (2026 baseline)** — "
-            "source: `config/parameters.yaml` § stack_layers"
+            "**Stack-layer velocities and substitutabilities (2026 baseline).**"
         )
         layers = config.load_parameters()["stack_layers"]
         rows = [
@@ -107,8 +106,7 @@ def render(global_params: dict):
         ]
         st.dataframe(rows, use_container_width=True, hide_index=True)
         st.markdown(
-            "**Knowledge regimes (Layer 7 defaults)** — "
-            "source: `config/parameters.yaml` § knowledge_regimes.regimes"
+            "**Knowledge regimes (Layer 7 defaults).**"
         )
         regimes = config.knowledge_regime_defaults()
         reg_rows = [

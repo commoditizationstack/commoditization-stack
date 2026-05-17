@@ -1,6 +1,6 @@
 """Configuration tab — full editing UI for every tunable parameter.
 
-Organises ~120 variables from parameters.yaml into 13 collapsible expanders,
+Organises ~120 framework parameters into 13 collapsible expanders,
 each grouped by area of the framework. Editing any slider records an
 override in st.session_state; all other tabs re-render with the override
 applied on the next interaction.
@@ -80,9 +80,9 @@ def render():
     st.markdown(
         """
         Every numeric parameter in the framework is editable here.
-        Changes are recorded as **overrides** layered on top of
-        `config/parameters.yaml`; all other tabs respect the overrides
-        on the next interaction.
+        Changes are recorded as **overrides** layered on top of the
+        framework defaults; every tab respects these overrides on the
+        next interaction.
 
         Use the sidebar **💾 Scenario YAML** controls to save your overrides
         as a portable file or clear them all back to defaults.

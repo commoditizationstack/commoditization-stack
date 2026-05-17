@@ -35,8 +35,7 @@ def render():
         - GitHub: [commoditization-stack-simulation](https://github.com/ademiran/commoditization-stack-simulation)
         - Author: Arthur de Miranda Neto · [LinkedIn](https://www.linkedin.com/in/arthur-mneto/)
         - License: MIT
-        - Documentation: see `docs/EXTENDING.md` and `README.md` in the
-          repository root.
+        - Documentation: see the project README in the repository.
 
         ### Acknowledgements
 

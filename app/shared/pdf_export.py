@@ -504,8 +504,8 @@ def _parameter_tables(styles, *, parameters: Dict[str, Any],
         f"student would plausibly want to manipulate to test a hypothesis "
         f"under the framework. Internal mechanics — random seeds, "
         f"Monte-Carlo run counts, plot constants — are intentionally "
-        f"omitted; they live in <font face='Courier'>parameters.yaml</font> "
-        f"for power-user inspection. "
+        f"omitted from this curated view; the full ⚙️ Configuration tab "
+        f"of the simulator exposes them for power users. "
         f"Variables modified by the user are flagged with ★ in the "
         f"rightmost column. Total active overrides: <b>{len(overrides)}</b>. "
         f"💵 Monetary values are in USD where applicable.",

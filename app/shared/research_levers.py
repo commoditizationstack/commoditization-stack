@@ -7,7 +7,7 @@ under *The Cost Gradient of the Build* (de Miranda Neto, 2026).
 Calibration constants whose only role is to shape internal mechanics
 (random seeds, grid sizes, UI defaults, plot colors, computed outputs
 written back into the YAML for convenience) are deliberately *excluded*.
-They remain in ``parameters.yaml`` for power-user inspection via the full
+They remain available for power-user inspection via the full
 "⚙️ Configuration" tab and via the YAML round-trip, but they do not
 appear in the curated tab or in the PDF parameter chapter.
 
@@ -22,8 +22,7 @@ Each entry carries:
 
 The data structure is consumed by:
   * ``app/tabs/tab_research_levers.py`` to render the new tab.
-  * ``app/shared/pdf_export.py`` to build the parameter chapter of the
-    scenario report.
+  * the PDF exporter, to build the parameter chapter of the scenario report.
 """
 
 from __future__ import annotations

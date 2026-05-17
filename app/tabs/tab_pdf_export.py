@@ -88,8 +88,8 @@ def render():
         - **Cover page** with timestamp, jurisdiction, and number of active overrides
         - **Executive summary** — live metrics (fragility, thresholds, sample
           inversion premium for the selected country)
-        - **Complete parameter table** — every value in `parameters.yaml`, with
-          a ★ next to anything you've changed
+        - **Complete parameter table** — every value in the active overlay,
+          with a ★ next to anything you've changed
         - **All available figures** from the framework (up to 41 PNGs) with
           paper-style captions
         - **Scenario YAML appendix** — paste it back later to reproduce this run
@@ -115,7 +115,7 @@ def render():
 
     if fig_count < total_fig:
         st.warning(
-            f"⚠️ {total_fig - fig_count} figures missing from `outputs/figures/`. "
+            f"⚠️ {total_fig - fig_count} figures not yet generated. "
             f"Use 🔄 **Recompute All** in the sidebar (or the launcher) to "
             f"regenerate them under your scenario before exporting."
         )

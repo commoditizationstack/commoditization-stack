@@ -1,8 +1,8 @@
 """Tab — Research levers: the curated set of parameters that matter.
 
-Renders the manifest defined in app/shared/research_levers.py. Each
-group becomes a collapsible expander; each parameter becomes a slider
-or number_input wired to the override engine in app/shared/state.py.
+Renders the curated lever manifest as a set of collapsible expanders;
+each parameter becomes a slider or number_input wired to the
+session-scoped override engine.
 
 This tab is meant for working researchers and PhD students: every input
 has a short description that names the paper section / equation /
@@ -93,9 +93,9 @@ def render():
         resolutions, UI display constants — are deliberately *not* here.
         They live in the full **⚙️ Configuration** tab if you need them.
 
-        Edits made here are saved as overrides on top of `parameters.yaml`,
-        propagate live to every other tab, and are recorded in the
-        scenario YAML you can download from the sidebar.
+        Edits made here are saved as overrides on top of the framework
+        defaults, propagate live to every other tab, and are recorded in
+        the scenario YAML you can download from the sidebar.
 
         > 💵 All monetary values in USD.
         """

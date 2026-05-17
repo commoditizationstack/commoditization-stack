@@ -3,10 +3,11 @@
 Centralises three concerns:
   1. Country selection ("brazil" / "france" / "united_states") — global,
      synced across all tabs that depend on jurisdiction.
-  2. Parameter overrides — user edits applied on top of parameters.yaml,
-     persisted in st.session_state, and consumed by all simulation code
-     through `effective_parameters()` (returns a dict like config.load_parameters()
-     but with the user's overrides applied).
+  2. Parameter overrides — user edits applied on top of the framework
+     defaults, persisted in st.session_state, and consumed by all
+     simulation code through `effective_parameters()` (returns a dict
+     in the same shape as the framework defaults but with the user's
+     overrides applied).
   3. YAML round-trip — download/upload the current overlay as a YAML file
      so users can save/share their scenarios.
 
@@ -123,7 +124,7 @@ def _apply_overrides_to_dict(base: dict, overrides: Dict[str, Any]) -> dict:
 
 
 def effective_parameters() -> dict:
-    """Return parameters.yaml with all user overrides applied.
+    """Return the framework defaults with all user overrides applied.
 
     This is the single function that every simulation entry point should
     consume in the Streamlit context — never call config.load_parameters()
