@@ -7,20 +7,11 @@ Run with:
 Or via the launcher:
     python main.py 1
 
-Navigation
-----------
-The sidebar groups the 17 pages of the simulator into five sections:
-
-    🧭 Orient        — Overview, About
-    🎛 Configure     — Research Levers, Company Valuation, Configuration
-    🔍 Explore       — Seven Layers, Inverted Discount, Jurisdictional,
-                       Migration, Hype Cycle
-    📚 Appendices    — A, B, D, E, F, G
-    📄 Report        — Export PDF
-
-The user picks a section, then a page within the section. The list of
-pages is identical to the legacy horizontal tab strip: nothing has been
-removed; only the organisation has improved.
+The 17 horizontal tabs at the top of the page expose every section of
+the paper. The sidebar holds the multi-country selector, the headline
+sliders, the named-scenario store, and the YAML scenario round-trip.
+A persistent status bar above the tabs shows the active blocs, the
+headline lever values, and the override count.
 """
 import sys
 from pathlib import Path
@@ -54,47 +45,6 @@ from app.tabs import (
 )
 
 
-# ---------------------------------------------------------------------------
-# Navigation manifest — single source of truth for the sidebar nav tree.
-# Tabs are exactly the same modules as before; only the grouping is new.
-# ---------------------------------------------------------------------------
-
-NAV_GROUPS = [
-    ("🧭 Orient", [
-        ("Overview",            "tab_overview",         False),
-        ("About",               "tab_about",            False),
-    ]),
-    ("🎛 Configure", [
-        ("🔬 Research Levers",  "tab_research_levers",  False),
-        ("🏢 Company Valuation", "tab_company_valuation", False),
-        ("⚙️ Configuration",     "tab_configuration",    False),
-    ]),
-    ("🔍 Explore", [
-        ("🧬 Seven Layers",      "tab_layers",            True),
-        ("💰 Inverted Discount", "tab_inverted_discount", True),
-        ("🌎 Jurisdictional",    "tab_jurisdictional",    True),
-        ("⏱ Migration",          "tab_migration",         True),
-        ("📈 Hype Cycle",        "tab_hype_cycle",        True),
-    ]),
-    ("📚 Appendices", [
-        ("📐 A — Layered DCF",        "tab_appendix_a", True),
-        ("🔄 B — Two-phase WACC",     "tab_appendix_b", True),
-        ("🎬 D — Streaming + Fiscal", "tab_appendix_d", True),
-        ("🏢 E — Case Companies",     "tab_appendix_e", True),
-        ("🔗 F — Upstream Chain",     "tab_appendix_f", True),
-        ("⚖️ G — Distributional",      "tab_appendix_g", True),
-    ]),
-    ("📄 Report", [
-        ("📄 Export PDF",       "tab_pdf_export",       False),
-    ]),
-]
-
-
-def _module(name: str):
-    """Module lookup so the nav manifest stays purely declarative."""
-    return globals()[name]
-
-
 def main():
     state.init_session_state()
 
@@ -112,15 +62,16 @@ def main():
             h1 { font-size: 1.75rem !important; color: #1B3A57; }
             h2 { font-size: 1.30rem !important; color: #2C5282; margin-top: 1.4rem !important; }
             h3 { font-size: 1.08rem !important; color: #3C6E91; }
-            /* Sidebar radio prettier */
-            section[data-testid="stSidebar"] .stRadio > label > div {
-                font-size: 0.92rem;
+            .stTabs [data-baseweb="tab-list"] { gap: 2px; flex-wrap: wrap; }
+            .stTabs [data-baseweb="tab"] {
+                padding: 6px 12px;
+                background: #EEF2F5;
+                border-radius: 6px 6px 0 0;
+                font-size: 0.88rem;
             }
-            /* Tighten the section selector */
-            section[data-testid="stSidebar"] [data-testid="stSelectbox"] label {
-                font-weight: 600;
-                color: #1B3A57;
-                font-size: 0.95rem;
+            .stTabs [aria-selected="true"] {
+                background: #1B3A57 !important;
+                color: white !important;
             }
         </style>
         """,
@@ -135,51 +86,69 @@ def main():
         f"Active jurisdictions: **{active}**. 💵 USD throughout.*"
     )
 
-    # Global sidebar (country selector + quick parameters + scenario YAML).
+    # Global sidebar (country selector + quick parameters + scenario YAML
+    # + named scenarios).
     global_params = parameter_panels.global_sidebar()
 
-    # ---------------------------------------------------------------------
-    # Navigation — two-level tree in the sidebar.
-    # ---------------------------------------------------------------------
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("🗂 Navigation")
-
-    section_labels = [g[0] for g in NAV_GROUPS]
-    chosen_section = st.sidebar.selectbox(
-        "Section",
-        options=section_labels,
-        index=section_labels.index(
-            st.session_state.get("nav_section", section_labels[0])),
-        key="nav_section_select",
-    )
-    st.session_state["nav_section"] = chosen_section
-
-    pages = next(g[1] for g in NAV_GROUPS if g[0] == chosen_section)
-    page_labels = [p[0] for p in pages]
-    nav_page_key = f"nav_page_in_{chosen_section}"
-    chosen_page = st.sidebar.radio(
-        "Page",
-        options=page_labels,
-        index=page_labels.index(
-            st.session_state.get(nav_page_key, page_labels[0])
-            if st.session_state.get(nav_page_key) in page_labels
-            else page_labels[0]),
-        key=f"nav_page_radio_{chosen_section}",
-    )
-    st.session_state[nav_page_key] = chosen_page
-
-    # Lookup the module + render.
-    page_label, module_name, takes_global = next(
-        p for p in pages if p[0] == chosen_page)
-
-    # Persistent status bar at the top of every page.
+    # Persistent status bar above the tab strip — active blocs, K7,
+    # AI substitutability of Layer 4, override count.
     components.status_bar()
 
-    module = _module(module_name)
-    if takes_global:
-        module.render(global_params)
-    else:
-        module.render()
+    # 17 horizontal tabs mirroring the paper structure.
+    tabs = st.tabs([
+        "🏠 Overview",
+        "🔬 Research Levers",
+        "🏢 Company Valuation",
+        "⚙️ Configuration",
+        "🧬 Seven Layers",
+        "💰 Inverted Discount",
+        "🌎 Jurisdictional",
+        "⏱ Migration",
+        "📈 Hype Cycle",
+        "📐 Appendix A",
+        "🔄 Appendix B",
+        "🎬 Appendix D",
+        "🏢 Appendix E",
+        "🔗 Appendix F",
+        "⚖️ Appendix G",
+        "📄 Export PDF",
+        "ℹ️ About",
+    ])
+
+    with tabs[0]:
+        tab_overview.render()
+    with tabs[1]:
+        tab_research_levers.render()
+    with tabs[2]:
+        tab_company_valuation.render()
+    with tabs[3]:
+        tab_configuration.render()
+    with tabs[4]:
+        tab_layers.render(global_params)
+    with tabs[5]:
+        tab_inverted_discount.render(global_params)
+    with tabs[6]:
+        tab_jurisdictional.render(global_params)
+    with tabs[7]:
+        tab_migration.render(global_params)
+    with tabs[8]:
+        tab_hype_cycle.render(global_params)
+    with tabs[9]:
+        tab_appendix_a.render(global_params)
+    with tabs[10]:
+        tab_appendix_b.render(global_params)
+    with tabs[11]:
+        tab_appendix_d.render(global_params)
+    with tabs[12]:
+        tab_appendix_e.render(global_params)
+    with tabs[13]:
+        tab_appendix_f.render(global_params)
+    with tabs[14]:
+        tab_appendix_g.render(global_params)
+    with tabs[15]:
+        tab_pdf_export.render()
+    with tabs[16]:
+        tab_about.render()
 
 
 if __name__ == "__main__":
