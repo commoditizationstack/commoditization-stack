@@ -78,17 +78,37 @@ def render(global_params: dict):
 
     st.markdown("---")
     st.subheader("📊 Streaming price decomposition (live)")
-    st.caption("Adjust the substitution percentages in ⚙️ Configuration → "
-                "Streaming case, and the stacked bars below refresh instantly.")
-    fig_price = live_figures.streaming_price_decomposition(results=results)
-    st.pyplot(fig_price, use_container_width=True)
+    st.caption("Adjust the substitution percentages in 🔬 Research Levers → "
+                "Streaming case, and the views below refresh instantly.")
+    view_price = st.radio("View",
+                            ["Stacked bars (matplotlib)",
+                             "Flow diagram (Sankey)"],
+                            horizontal=True, key="streaming_view")
+    if view_price.startswith("Stacked"):
+        fig_price = live_figures.streaming_price_decomposition(results=results)
+        st.pyplot(fig_price, use_container_width=True)
+    else:
+        from app.shared import sankey_charts
+        st.plotly_chart(sankey_charts.streaming_price_sankey(results),
+                          use_container_width=True)
 
     st.subheader("🏛 Fiscal impact across 3 blocs (live)")
     st.caption("Edit corporate tax rates, employer charges, or transfer-pricing "
-                "shares in ⚙️ Configuration → Fiscal blocs to reshape.")
-    fig_fiscal = live_figures.fiscal_blocs_decomposition(
-        blocs, countries=state.current_countries())
-    st.pyplot(fig_fiscal, use_container_width=True)
+                "shares in 🔬 Research Levers → Fiscal blocs to reshape.")
+    view_fiscal = st.radio("View",
+                              ["Stacked bars (matplotlib)",
+                               "Flow diagram (Sankey)"],
+                              horizontal=True, key="fiscal_view")
+    if view_fiscal.startswith("Stacked"):
+        fig_fiscal = live_figures.fiscal_blocs_decomposition(
+            blocs, countries=state.current_countries())
+        st.pyplot(fig_fiscal, use_container_width=True)
+    else:
+        from app.shared import sankey_charts
+        st.plotly_chart(
+            sankey_charts.fiscal_blocs_sankey(
+                blocs, countries=state.current_countries()),
+            use_container_width=True)
 
     # ===== Paper PNGs collapsed =====
     with st.expander("📷 Original paper figures (Fig D.2–D.8 PNGs)", expanded=False):

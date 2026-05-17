@@ -20,6 +20,9 @@ reportlab>=4.0
 seaborn>=0.13
 tqdm>=4.66
 
+# Sankey diagrams in the Streamlit UI (Phase 2 of the UX rollout)
+plotly>=5.18
+
 # Optional: Jupyter notebook support (recommended for VSCode)
 jupyterlab>=4.0
 ipykernel>=6.25
