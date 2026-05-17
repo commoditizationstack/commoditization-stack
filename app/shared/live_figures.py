@@ -916,6 +916,69 @@ def appendix_b_two_phase_cost_of_capital(*, parameters: Dict) -> plt.Figure:
     return fig
 
 
+def death_valley_cash_trajectories(*,
+                                      classical_cash: np.ndarray,
+                                      post_genai_cash: np.ndarray,
+                                      post_genai_params: Dict,
+                                      ) -> plt.Figure:
+    """Cash trajectories under classical vs post-AI regimes (live).
+
+    Takes pre-computed cash arrays (the caller computes them from
+    src.death_valley using the user's parameter overlay) plus the
+    post-AI parameter dict so we can annotate the refinancing event
+    and the commoditization-valley window.
+    """
+    fig, ax = plt.subplots(figsize=(11, 5.6))
+    n_c = len(classical_cash)
+    n_p = len(post_genai_cash)
+    ax.plot(np.arange(n_c), classical_cash / 1e6, color="#2C5282",
+            linewidth=2.2, label="Classical (single valley)")
+    ax.plot(np.arange(n_p), post_genai_cash / 1e6, color="#C44536",
+            linewidth=2.4, label="Post-GenAI (double valley)")
+
+    # Cash-crisis fill
+    ax.fill_between(np.arange(n_p), post_genai_cash / 1e6, 0,
+                     where=(post_genai_cash < 0),
+                     color="#C44536", alpha=0.15, label="Cash crisis zone")
+
+    ax.axhline(0, color="black", linewidth=0.7)
+
+    # Annotate refinancing event
+    refi_month = int(post_genai_params.get("refinancing_event_month", 14))
+    if 0 <= refi_month < n_p:
+        refi_y = post_genai_cash[refi_month] / 1e6
+        ax.annotate("Series A\n(refinancing)",
+                     xy=(refi_month, refi_y),
+                     xytext=(refi_month + 3, refi_y + 1.5),
+                     arrowprops=dict(arrowstyle="->", color="grey",
+                                       lw=0.8),
+                     fontsize=8.5, color="#444")
+
+    # Shade the commoditization valley window
+    cv_start = int(post_genai_params.get(
+        "commoditization_valley_start_month", 22))
+    cv_end = int(post_genai_params.get(
+        "commoditization_valley_end_month", 36))
+    cv_end = min(cv_end, n_p - 1)
+    if cv_end > cv_start:
+        ax.axvspan(cv_start, cv_end, color="#C44536", alpha=0.08,
+                    label="Commoditization valley")
+        ax.text((cv_start + cv_end) / 2,
+                 ax.get_ylim()[1] * 0.92 if ax.get_ylim()[1] > 0 else 0.5,
+                 "Second valley", fontsize=8, color="#7A1F1F",
+                 ha="center", style="italic")
+
+    ax.set_xlabel("Months since founding")
+    ax.set_ylabel("Cash (USD millions)")
+    ax.set_title("Death valley: classical vs post-AI double valley (live)",
+                  fontsize=10, pad=8)
+    ax.grid(True, linestyle=":", alpha=0.5)
+    ax.set_axisbelow(True)
+    ax.legend(loc="upper right", fontsize=8.5, framealpha=0.92)
+    fig.tight_layout()
+    return fig
+
+
 def appendix_b_two_phase_eva_trajectory(*, parameters: Dict) -> plt.Figure:
     """B.2 — EVA: phase-conditional WACC vs classical single-WACC (live)."""
     macro = parameters["firms_appendix_b"]["macro"]

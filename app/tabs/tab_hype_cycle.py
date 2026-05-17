@@ -27,13 +27,17 @@ def render(global_params: dict):
         """
     )
 
-    # ===== Live double-valley curve =====
+    # ===== Live double-valley expectations curve =====
     from app.shared import live_figures
+    from src.death_valley import (
+        classical_cash_trajectory, post_genai_double_valley_cash_trajectory,
+    )
+
     p = state.effective_parameters()
     st.subheader("📈 Hype Cycle: classical vs double-valley (live)")
-    st.caption("Edit hype-cycle parameters in ⚙️ Configuration to reshape the "
-                "trajectories. Adjust peak/trough/plateau heights to explore "
-                "alternative regime calibrations.")
+    st.caption("Edit hype-cycle parameters in 🔬 Research Levers → "
+                "Hype cycle to reshape the disillusionment trough and "
+                "post-AI commoditization valley.")
     fig = live_figures.hype_cycle_double_valley(
         n_quarters=32,
         classical_params=p["hype_cycle"]["classical"],
@@ -43,8 +47,52 @@ def render(global_params: dict):
     )
     st.pyplot(fig, use_container_width=True)
 
-    # ===== Paper PNGs =====
-    with st.expander("📷 Original paper figures + death-valley cash trajectory",
+    # ===== Live death-valley cash trajectory =====
+    st.subheader("💀 Death-valley cash trajectory (live)")
+    st.caption("Both curves consume the current parameter overlay. Edit "
+                "**🔬 Research Levers → 💀 Death-valley dynamics** to "
+                "rebalance burn, refinancing, peak revenue, or the "
+                "commoditization-valley window — and watch how a Series A "
+                "rescue still drops a firm into the second valley if its "
+                "Layer-4 share is high and margin compression hits hard.")
+
+    cls = p["death_valley"]["classical"]
+    post = p["death_valley"]["post_genai"]
+    classical_cash = classical_cash_trajectory(
+        n_months=int(cls["n_months"]),
+        initial_cash_usd=float(cls["initial_cash_usd"]),
+        monthly_burn_usd=float(cls["monthly_burn_usd"]),
+        valley_start_month=int(cls["valley_start_month"]),
+        valley_end_month=int(cls["valley_end_month"]),
+        revenue_ramp_start_month=int(cls["revenue_ramp_start_month"]),
+        peak_revenue_usd_per_month=float(cls["peak_revenue_usd_per_month"]),
+        revenue_growth=float(cls["revenue_growth"]),
+    )
+    post_cash = post_genai_double_valley_cash_trajectory(
+        n_months=int(post["n_months"]),
+        initial_cash_usd=float(post["initial_cash_usd"]),
+        monthly_burn_usd_initial=float(post["monthly_burn_usd_initial"]),
+        classical_valley_start_month=int(post["classical_valley_start_month"]),
+        classical_valley_end_month=int(post["classical_valley_end_month"]),
+        commoditization_valley_start_month=int(post["commoditization_valley_start_month"]),
+        commoditization_valley_end_month=int(post["commoditization_valley_end_month"]),
+        revenue_ramp_start_month=int(post["revenue_ramp_start_month"]),
+        peak_revenue_usd_per_month=float(post["peak_revenue_usd_per_month"]),
+        revenue_growth=float(post["revenue_growth"]),
+        margin_compression_factor=float(post["margin_compression_factor"]),
+        refinancing_event_month=int(post["refinancing_event_month"]),
+        refinancing_amount_usd=float(post["refinancing_amount_usd"]),
+        burn_growth_after_funding=float(post["burn_growth_after_funding"]),
+    )
+    fig_dv = live_figures.death_valley_cash_trajectories(
+        classical_cash=classical_cash,
+        post_genai_cash=post_cash,
+        post_genai_params=post,
+    )
+    st.pyplot(fig_dv, use_container_width=True)
+
+    # ===== Paper PNGs collapsed =====
+    with st.expander("📷 Original paper figures (PNG snapshots)",
                        expanded=False):
         for fname, title, caption in [
             ("fig4_hype_cycle.png",
