@@ -69,7 +69,11 @@ def render(global_params: dict):
          "rate, no TRL or layer adjustment) on the left; layered DCF (with TRL "
          "premium and layer-decomposed risk premium) on the right. The layered "
          "framework moves the two firms apart by a factor of approximately 2.5x, "
-         "with diagnostic implications for funding-round placement."),
+         "with diagnostic implications for funding-round placement. "
+         "*Note (Sprint 5 cross-reference):* the value shown is a single-channel "
+         "correction (discount-rate side only); the dual-channel value that "
+         "additionally corrects the cash-flow side via λ_2V is reported in "
+         "Figure B.5 of Appendix B.2.6 (see also `docs/dual_channel_correction.md`)."),
     ]
 
     for fname, title, caption in fig_titles:

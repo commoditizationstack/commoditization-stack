@@ -92,7 +92,12 @@ def render(global_params: dict):
          "and DataFlow Pro (right). NeuroCertify's Phase-2 jump is 1.67 pp "
          "(Layer-6 protection); DataFlow Pro's is 3.01 pp (Layer-4 exposure). "
          "The 1.34-pp asymmetry is the operational realization in WACC space "
-         "of the seven-layer framework's claim about defensibility migration."),
+         "of the seven-layer framework's claim about defensibility migration. "
+         "*Note (Sprint 5 cross-reference):* this trajectory is a single-channel "
+         "correction (denominator side: phase-conditional WACC + δ_2V drag on "
+         "the terminal value); the dual-channel value that additionally "
+         "corrects the numerator via λ_2V is reported in Figure B.5 of "
+         "Appendix B.2.6."),
         ("fig20_two_phase_eva_trajectory.png",
          "EVA trajectory: classical vs two-phase",
          "Year-by-year EVA under classical single-WACC formulation (grey) "

@@ -47,6 +47,24 @@ class TestImports(unittest.TestCase):
             "fig_b26_four_path_reconciliation.png",
         })
 
+    def test_figure_a3_and_b1_caption_cross_reference_b5(self):
+        """Sprint 9 — Figure A.3 (fig18_valuation_comparison.png) and
+        Figure B.1 (fig19_two_phase_cost_of_capital.png) captions must
+        each mention Figure B.5 so the reader of the single-channel
+        figures is pointed at the dual-channel reconciliation. This
+        is the manuscript edit prescribed in the Insertion Package
+        Section 5 ("Caption note for existing figures")."""
+        from app.shared.pdf_export import FIGURE_MANIFEST
+        caps = {entry[1]: entry[2] for entry in FIGURE_MANIFEST}
+        for fname in ("fig18_valuation_comparison.png",
+                      "fig19_two_phase_cost_of_capital.png"):
+            self.assertIn(fname, caps,
+                          msg=f"{fname} missing from PDF manifest")
+            self.assertIn("Figure B.5", caps[fname],
+                          msg=f"{fname} caption does not cross-reference Figure B.5")
+            self.assertIn("single-channel", caps[fname].lower(),
+                          msg=f"{fname} caption does not flag itself as single-channel")
+
 
 class TestInvertedDiscountInvariants(unittest.TestCase):
     """The inverted discount must reduce to classical when below threshold,

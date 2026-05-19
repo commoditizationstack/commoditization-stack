@@ -93,10 +93,18 @@ FIGURE_MANIFEST: List[Tuple[str, str, str]] = [
     ("Appendix A — Layered DCF", "fig17_layer_risk_decomposition.png",
      "Layer-decomposed firm-specific risk premium."),
     ("Appendix A — Layered DCF", "fig18_valuation_comparison.png",
-     "Enterprise value: classical Damodaran vs layered DCF."),
+     "Enterprise value: classical Damodaran vs layered DCF. "
+     "The value shown is a single-channel correction (discount-rate side "
+     "only via TRL + layered firm-specific premium); the dual-channel value "
+     "that additionally corrects the cash-flow side is reported in Figure "
+     "B.5 (Appendix B.2.6)."),
     # Appendix B — Two-phase
     ("Appendix B — Two-phase CAPM/WACC", "fig19_two_phase_cost_of_capital.png",
-     "Two-phase WACC trajectory for NeuroCertify and DataFlow Pro."),
+     "Two-phase WACC trajectory for NeuroCertify and DataFlow Pro. "
+     "The value shown is a single-channel correction (denominator side: "
+     "phase-conditional WACC with δ_2V drag on TV); the dual-channel value "
+     "that additionally corrects the numerator via λ_2V is reported in "
+     "Figure B.5 (Appendix B.2.6)."),
     ("Appendix B — Two-phase CAPM/WACC", "fig20_two_phase_eva_trajectory.png",
      "Phase-conditional EVA vs classical single-WACC EVA."),
     # Appendix B.2.6 — Dual-channel correction (Sprint 5)
