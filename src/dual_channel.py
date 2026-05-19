@@ -61,6 +61,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 from . import config
+from .valuation_layered import LayerExposure
 from .valuation_two_phase import (
     PhaseParameters,
     two_phase_dcf,
@@ -277,6 +278,167 @@ def v0_dualchannel(
             "V0_dualchannel = two-phase DCF (Eq B.11) with FCF replaced by "
             "FCF * lambda_2V (Eq B.14). When lambda_2V = 1.0 in all phases "
             "this reduces to V0_twophase_B to the cent (acceptance check 3)."
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase-3 calibration helper (unified-lambda correction)
+# ---------------------------------------------------------------------------
+#
+# The literal Eq B.14 of the Insertion Package fixes
+# ``lambda_2V(Phase 3) = 1.0`` — no retreat after the valley. Empirically
+# (Cazzaniga IMF 2024; Brynjolfsson, Chandar & Chen 2025; Korinek 2025;
+# Damodaran 2009) the post-AI margin compression is a PERSISTENT effect:
+# the firm recovers from the second valley but to a NEW lower steady
+# state, not back to the pre-Phase-2 trajectory.
+#
+# The framework therefore extends lambda_2V to Phase 3, with a separately
+# calibrated helper. The Phase-3 lambda absorbs the information the
+# original proposal placed on the ``delta_2V``-on-TV mechanism — see
+# docs/dual_channel_correction.md for the state-of-the-art consultation
+# and the proposed manuscript edits.
+
+
+def lambda_2V_phase3_from_calibration(
+    layer4_share: float,
+    layer6_share: float,
+    k_L4_p3: Optional[float] = None,
+    k_L6_p3: Optional[float] = None,
+    lower_bound: Optional[float] = None,
+    upper_bound: Optional[float] = None,
+) -> float:
+    """Auditable derivation of the Phase-3 permanent-compression factor
+    from the firm's layer composition.
+
+    Formula (parallels the Phase-2 helper, with separately-calibrated
+    coefficients to reflect that *permanent* damage may not equal
+    *transient* compression)::
+
+        lambda_2V_phase3 = clamp(
+            1.0 - k_L4_p3 * layer4_share + k_L6_p3 * layer6_share,
+            lower_bound, upper_bound,
+        )
+
+    The default ``k_L4_p3`` is HIGHER than the Phase-2 ``k_L4`` because
+    the displacement-risk literature reports permanent damage > transient
+    compression for Layer-4-heavy firms. The default ``k_L6_p3`` equals
+    the Phase-2 ``k_L6`` because Layer-6 protection persists across
+    phases.
+
+    Parameters left at ``None`` are loaded from
+    ``config/parameters.yaml`` section 26
+    (``dual_channel.lambda_2V_phase3_calibration``).
+    """
+    dc = config.dual_channel()["lambda_2V_phase3_calibration"]
+    if k_L4_p3 is None:
+        k_L4_p3 = float(dc["k_L4_p3"])
+    if k_L6_p3 is None:
+        k_L6_p3 = float(dc["k_L6_p3"])
+    if lower_bound is None:
+        lower_bound = float(dc["lower_bound"])
+    if upper_bound is None:
+        upper_bound = float(dc["upper_bound"])
+
+    raw = 1.0 - k_L4_p3 * layer4_share + k_L6_p3 * layer6_share
+    return float(max(lower_bound, min(upper_bound, raw)))
+
+
+# ---------------------------------------------------------------------------
+# Unified V0_dualchannel — the canonical scientifically-coherent version
+# ---------------------------------------------------------------------------
+
+def v0_dualchannel_unified(
+    fcf_by_year: List[float],
+    risk_free_rate: float,
+    equity_risk_premium: float,
+    phases: PhaseParameters,
+    terminal_growth_rate: float,
+    lambda_phase2: float,
+    lambda_phase3: float,
+    lambda_phase1: float = 1.0,
+) -> DualChannelResult:
+    """Unified V0_dualchannel — the canonical reading of B.2.6.
+
+    Extends Eq B.14 to all three phases (lambda_phase3 may be < 1.0,
+    capturing permanent margin compression to the new lower steady
+    state) and retires the ``delta_2V`` mechanism in this path
+    (its information is now absorbed into ``lambda_phase3``).
+
+    Computational form::
+
+        FCF_2V(t) = FCF_proj(t) * lambda_2V(phi(t))    for all t
+        Discount rate per year   = two-phase WACC (Eq B.6)
+        Terminal value           = Gordon perpetuity on the
+                                   compressed Y5 FCF (no separate
+                                   delta_2V drag — second_valley_drag
+                                   is hard-set to 0 in this path)
+
+    Identity (acceptance check 3, unified form): with
+    ``lambda_phase1 = lambda_phase2 = lambda_phase3 = 1.0``, this
+    function reduces to ``two_phase_dcf`` with ``second_valley_drag = 0``
+    to the cent. The basic v0_dualchannel's identity (lambda_phase2 = 1
+    with delta_2V from YAML) is a DIFFERENT identity and remains valid
+    for the literal Eq B.15 reading.
+
+    Why a separate function rather than a flag on v0_dualchannel:
+    the unified path *retires* delta_2V (forces it to 0 inside),
+    which is a substantive semantic change that should be visible at
+    the call site. Callers requiring the literal Eq B.15 use
+    ``v0_dualchannel``; callers requiring the displacement-risk-
+    consistent canonical form use this function.
+
+    See docs/dual_channel_correction.md for the full rationale and
+    the proposed manuscript edits.
+    """
+    lambda_vec = build_lambda_vector(
+        phases=phases,
+        n_years=len(fcf_by_year),
+        lambda_phase2=lambda_phase2,
+        lambda_phase1=lambda_phase1,
+        lambda_phase3=lambda_phase3,
+    )
+
+    # Like-for-like two-phase baseline at delta_2V = 0 so the
+    # numerator_channel_effect isolates ONLY the cash-flow channel
+    # contribution under the unified construction.
+    twophase = two_phase_dcf(
+        fcf_by_year=fcf_by_year,
+        risk_free_rate=risk_free_rate,
+        equity_risk_premium=equity_risk_premium,
+        phases=phases,
+        terminal_growth_rate=terminal_growth_rate,
+        second_valley_drag=0.0,                # delta_2V retired
+        cash_flow_multipliers=None,
+    )
+
+    dual = two_phase_dcf(
+        fcf_by_year=fcf_by_year,
+        risk_free_rate=risk_free_rate,
+        equity_risk_premium=equity_risk_premium,
+        phases=phases,
+        terminal_growth_rate=terminal_growth_rate,
+        second_valley_drag=0.0,                # delta_2V retired
+        cash_flow_multipliers=lambda_vec,
+    )
+
+    return DualChannelResult(
+        enterprise_value=dual["enterprise_value"],
+        pv_explicit=dual["pv_explicit"],
+        pv_terminal=dual["pv_terminal"],
+        yearly_wacc=list(dual["yearly_wacc"]),
+        phase_3_wacc=dual["phase_3_wacc"],
+        lambda_vector=lambda_vec,
+        twophase_enterprise_value=twophase["enterprise_value"],
+        numerator_channel_effect=(
+            twophase["enterprise_value"] - dual["enterprise_value"]
+        ),
+        notes=(
+            "Unified V0_dualchannel (canonical): Eq B.14 extended to "
+            "all three phases, delta_2V retired (information absorbed "
+            "into lambda_phase3). See docs/dual_channel_correction.md "
+            "for the state-of-the-art rationale and the proposed "
+            "manuscript edits."
         ),
     )
 

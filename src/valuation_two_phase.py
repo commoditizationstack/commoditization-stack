@@ -245,6 +245,7 @@ def two_phase_dcf(
     terminal_growth_rate: float,
     second_valley_drag: float = 0.0,
     cash_flow_multipliers: Optional[List[float]] = None,
+    extra_rate_per_year: Optional[List[float]] = None,
 ) -> Dict[str, float]:
     """Two-phase DCF with compounded discount factors, as Damodaran (2016)
     explicitly recommends for time-varying rates.
@@ -272,6 +273,17 @@ def two_phase_dcf(
         value uses the multiplied last FCF as its perpetuity base; with
         ``lambda_2V(phase_3) = 1.0`` (the normative case) this is
         identical to the unmultiplied last FCF.
+
+    extra_rate_per_year : list of float, optional
+        Additive premium added to each year's WACC before discounting.
+        Defaults to all-zeros, preserving the legacy behaviour (also
+        regression-tested). Used by the *hybrid* dual-channel path
+        (``v0_dualchannel_hybrid``) to add the layered firm-specific
+        premium (with ``alpha_4_adj`` per Eq B.13) on top of the
+        phase-conditional WACC, so the Phase-2 systematic component
+        (already in the beta jump) and the residual idiosyncratic
+        component (in the layered premium) compose without
+        double-counting.
     """
     n_years = len(fcf_by_year)
     if cash_flow_multipliers is None:
@@ -284,10 +296,20 @@ def two_phase_dcf(
             )
         multipliers = [float(m) for m in cash_flow_multipliers]
 
+    if extra_rate_per_year is None:
+        extras = [0.0] * n_years
+    else:
+        if len(extra_rate_per_year) != n_years:
+            raise ValueError(
+                f"extra_rate_per_year has length {len(extra_rate_per_year)}; "
+                f"expected {n_years} to match fcf_by_year."
+            )
+        extras = [float(e) for e in extra_rate_per_year]
+
     yearly_wacc = []
     for year in range(1, n_years + 1):
         w = two_phase_wacc(year, risk_free_rate, equity_risk_premium, phases)
-        yearly_wacc.append(w["wacc"])
+        yearly_wacc.append(w["wacc"] + extras[year - 1])
 
     # PV of explicit period using compounded discount factors
     adjusted_fcf = [f * m for f, m in zip(fcf_by_year, multipliers)]

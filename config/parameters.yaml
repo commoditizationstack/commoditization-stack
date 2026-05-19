@@ -987,6 +987,28 @@ dual_channel:
     k_L6: 0.40                            # Layer-6 protection weight
     lower_bound: 0.50
     upper_bound: 1.00
+  # --- UNIFIED-LAMBDA CORRECTION (see docs/dual_channel_correction.md) ---
+  # Extends Eq B.14 to Phase 3: the post-AI margin compression is a
+  # PERMANENT effect (Cazzaniga IMF 2024, Brynjolfsson 2025, Korinek 2025),
+  # not a transient dip that fully recovers. lambda_phase3 < 1.0 captures
+  # the new lower steady state and ABSORBS the information that the
+  # original delta_2V mechanism placed on the terminal value alone.
+  #
+  # In the canonical (unified) dual-channel path, delta_2V is set to 0
+  # to avoid double-counting (its role is now in lambda_phase3).
+  # The two-phase and layered_A paths continue to use their YAML-
+  # documented delta_2V values UNCHANGED — regression-tested.
+  # --- Per-firm Phase-3 defaults ---
+  lambda_2V_phase3_defaults:
+    neurocertify: 0.95                    # Mild permanent compression (Layer-6 protects)
+    dataflow: 0.57                        # Severe permanent compression (Layer-4-heavy)
+  # --- Calibration helper for lambda_2V_phase3 (separately calibrated coeffs) ---
+  # lambda_2V_phase3 = clamp(1 - k_L4_p3 * layer4_share + k_L6_p3 * layer6_share, lower, upper)
+  lambda_2V_phase3_calibration:
+    k_L4_p3: 0.85                         # Higher than k_L4 — permanent damage > transient
+    k_L6_p3: 0.40                         # Same as k_L6 — Layer-6 protection persists
+    lower_bound: 0.50
+    upper_bound: 0.95                     # Even Layer-6 dominant firms suffer some residual
   # --- Eqs B.12–B.13: systematic/idiosyncratic partition of Layer-4 risk ---
   # alpha_4 (Layer-4 coefficient) currently sits at 0.08 in valuation_layered.
   # The systematic share is already represented in the Phase-2 beta jump of
