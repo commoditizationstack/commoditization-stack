@@ -1033,3 +1033,457 @@ def appendix_b_two_phase_eva_trajectory(*, parameters: Dict) -> plt.Figure:
                  fontsize=11, y=1.02)
     fig.tight_layout()
     return fig
+
+
+# ---------------------------------------------------------------------------
+# Section 6.5 / Appendix B.2.6 — Dual-channel figures (Sprint 5)
+# ---------------------------------------------------------------------------
+
+# Two case-firm colours used across Appendix A/B figures.
+NEUROCERTIFY_COLOR = "#0B6E4F"     # deep-tech green
+DATAFLOW_COLOR = "#C44536"         # commoditizing-tech red
+PHASE_2_COLOR = "#C44536"          # Phase 2 (second valley) shading
+PHASE_1_COLOR = "#888888"          # Phase 1 (growth) shading
+PHASE_3_COLOR = "#0B6E4F"          # Phase 3 (terminal) shading
+
+
+def figure_b3_dualchannel_geometry(*,
+                                    formal_labels: bool = True,
+                                    figsize: Tuple[float, float] = (10.5, 6.0),
+                                    ) -> plt.Figure:
+    """Figure 6-bis / B.3 — Conceptual dual-channel geometry.
+
+    Two curves on a shared time axis:
+      * Upper curve: projected revenue — rising, false-recovery peak,
+        second-valley dip, partial recovery to a NEW lower steady
+        state (per the unified-lambda correction in
+        docs/dual_channel_correction.md).
+      * Lower curve: cost of capital (WACC) — flat in Phase 1,
+        Phase-2 rise, partial settle in Phase 3.
+
+    The Phase-2 window is shaded across both curves. The figure is
+    purely conceptual — no axis values — and is intended to be
+    cross-referenced from §6.5 (where the second valley is first
+    introduced) and from Appendix B.2.6 (the formal treatment).
+
+    Parameters
+    ----------
+    formal_labels : bool
+        When True (default), renders the formal B.3 labels (numerator
+        and denominator of the DCF, with the compounding window
+        bracket). When False, renders the §6.5 cross-reference
+        version with only the prose annotations.
+    """
+    fig, (ax_rev, ax_wacc) = plt.subplots(2, 1, figsize=figsize, sharex=True)
+
+    # Shared horizontal axis: "time" in 50-step grid covering the
+    # three lifecycle phases. Phase boundaries at 35% and 70% of the
+    # x-axis put Phase 2 in the visual middle.
+    t = np.linspace(0, 1, 200)
+    phase1_end = 0.35
+    phase2_end = 0.70
+
+    # --- Upper curve: projected revenue ---
+    # Schematic, monotonic within each phase:
+    #   Phase 1: smooth rise 0.40 → 1.10  (false-recovery peak at end of Phase 1)
+    #   Phase 2: smooth dip   1.10 → 0.65 (the second valley, half cosine)
+    #   Phase 3: partial recovery 0.65 → 0.85 (asymptote to a NEW lower
+    #            steady state, BELOW the false-recovery peak — captures
+    #            the permanent margin compression of lambda_phase3 < 1)
+    u_p1 = np.clip(t / phase1_end, 0, 1)
+    u_p2 = np.clip((t - phase1_end) / (phase2_end - phase1_end), 0, 1)
+    u_p3 = np.clip((t - phase2_end) / (1.0 - phase2_end), 0, 1)
+    rev = np.where(
+        t < phase1_end,
+        0.40 + 0.70 * u_p1 ** 1.3,
+        np.where(
+            t < phase2_end,
+            # Half cosine: smoothly monotonic decline 1.10 → 0.65
+            1.10 - 0.45 * (1.0 - np.cos(np.pi * u_p2)) / 2.0,
+            # Exponential approach to new lower steady state 0.85
+            0.65 + 0.20 * (1.0 - np.exp(-3.5 * u_p3)),
+        ),
+    )
+    ax_rev.plot(t, rev, color=DATAFLOW_COLOR, linewidth=2.5,
+                label="Projected revenue (numerator of DCF)")
+    ax_rev.fill_between(t, rev.min() * 0.95, rev, alpha=0.10,
+                        color=DATAFLOW_COLOR)
+    ax_rev.set_ylabel("Revenue (schematic)", fontsize=10)
+    ax_rev.set_yticks([])
+    ax_rev.grid(False)
+
+    # --- Lower curve: cost of capital (WACC) ---
+    # Flat-low in Phase 1, monotonic rise in Phase 2 (half cosine),
+    # partial settle in Phase 3 (residual scarring above Phase-1 level).
+    #   Phase 1: 0.100  (flat)
+    #   Phase 2: 0.100 → 0.140  (smooth rise via half cosine)
+    #   Phase 3: 0.140 → 0.115  (asymptotic settle, ABOVE 0.100)
+    wacc = np.where(
+        t < phase1_end,
+        0.100 * np.ones_like(t),
+        np.where(
+            t < phase2_end,
+            0.100 + 0.040 * (1.0 - np.cos(np.pi * u_p2)) / 2.0,
+            0.115 + 0.025 * np.exp(-3.5 * u_p3),
+        ),
+    )
+    ax_wacc.plot(t, wacc, color="#2C5282", linewidth=2.5,
+                 label="Cost of capital WACC (denominator of DCF)")
+    ax_wacc.fill_between(t, wacc, wacc.max() * 1.05, alpha=0.10,
+                         color="#2C5282")
+    ax_wacc.set_ylabel("WACC (schematic)", fontsize=10)
+    ax_wacc.set_yticks([])
+    ax_wacc.set_xlabel("Time (firm lifecycle, schematic)", fontsize=10)
+    ax_wacc.set_xticks([])
+    ax_wacc.grid(False)
+
+    # --- Phase shading on both panels ---
+    for ax in (ax_rev, ax_wacc):
+        ax.axvspan(0, phase1_end, alpha=0.10, color=PHASE_1_COLOR)
+        ax.axvspan(phase1_end, phase2_end, alpha=0.20, color=PHASE_2_COLOR)
+        ax.axvspan(phase2_end, 1.0, alpha=0.10, color=PHASE_3_COLOR)
+
+    # --- Phase labels at top of upper panel ---
+    y_top = rev.max() * 1.05
+    ax_rev.set_ylim(rev.min() * 0.85, y_top * 1.08)
+    label_y = y_top * 0.98
+    ax_rev.text(phase1_end / 2, label_y, "Phase 1\n(growth)",
+                ha="center", fontsize=9, color="#555", style="italic", va="top")
+    ax_rev.text((phase1_end + phase2_end) / 2, label_y, "Phase 2\n(2nd valley)",
+                ha="center", fontsize=9, color="#8B0000", style="italic", va="top")
+    ax_rev.text((phase2_end + 1) / 2, label_y, "Phase 3\n(terminal)",
+                ha="center", fontsize=9, color="#0B6E4F", style="italic", va="top")
+
+    # --- Channel annotations ---
+    valley_mid = (phase1_end + phase2_end) / 2
+    valley_rev_y = rev[np.argmin(np.abs(t - valley_mid))]
+    valley_wacc_y = wacc[np.argmin(np.abs(t - valley_mid))]
+
+    # Upper: "numerator channel — revenue compressed"
+    # Anchor LEFT of the trough, well below the bracket.
+    ax_rev.annotate(
+        "Numerator channel:\nrevenue compressed by λ_2V",
+        xy=(valley_mid - 0.02, valley_rev_y),
+        xytext=(phase1_end - 0.02, valley_rev_y - 0.05),
+        fontsize=9, color="#8B0000", ha="right",
+        arrowprops=dict(arrowstyle="->", color="#8B0000", lw=1.2),
+    )
+    # Lower: "denominator channel — WACC rises (β jump)"
+    # Anchor to the right of the WACC peak, above the curve.
+    peak_t = phase2_end - (phase2_end - phase1_end) * 0.10
+    peak_wacc_y = wacc[np.argmin(np.abs(t - peak_t))]
+    ax_wacc.annotate(
+        "Denominator channel:\nWACC rises (β jump, Eq B.6)",
+        xy=(peak_t, peak_wacc_y),
+        xytext=(phase2_end + 0.08, peak_wacc_y + 0.010),
+        fontsize=9, color="#1F365B", ha="left",
+        arrowprops=dict(arrowstyle="->", color="#1F365B", lw=1.2),
+    )
+
+    # --- Bracket showing both channels act in the same window ---
+    # Put the bracket near the BOTTOM of the upper panel so it does not
+    # collide with the trough or with the numerator-channel annotation.
+    y_lim_lo, y_lim_hi = ax_rev.get_ylim()
+    bracket_y = y_lim_lo + (y_lim_hi - y_lim_lo) * 0.12
+    ax_rev.annotate(
+        "", xy=(phase1_end, bracket_y),
+        xytext=(phase2_end, bracket_y),
+        arrowprops=dict(arrowstyle="<->", color="#444", lw=1.3,
+                        shrinkA=0, shrinkB=0),
+    )
+    ax_rev.text((phase1_end + phase2_end) / 2,
+                bracket_y - (y_lim_hi - y_lim_lo) * 0.04,
+                "Both channels act in the same window",
+                ha="center", fontsize=8.5, color="#444", style="italic")
+
+    # --- Formal B.3 labels (DCF compounding window) ---
+    if formal_labels:
+        # Bottom-right of upper panel — out of the way of phase labels
+        ax_rev.text(0.98, 0.04,
+                    "Numerator: FCF(t) · λ_2V(φ(t))  (Eq B.14)",
+                    fontsize=8.5, color="#444", style="italic",
+                    ha="right", va="bottom",
+                    transform=ax_rev.transAxes)
+        # Bottom-right of lower panel
+        ax_wacc.text(0.98, 0.04,
+                     "Denominator: ∏ (1 + WACC(s))  (Eq B.10)",
+                     fontsize=8.5, color="#444", style="italic",
+                     ha="right", va="bottom",
+                     transform=ax_wacc.transAxes)
+
+    title = ("Appendix B.2.6 — Dual-channel geometry"
+             if formal_labels
+             else "Section 6.5 — Second valley, dual-channel intuition")
+    fig.suptitle(title, fontsize=11, y=0.995)
+    fig.tight_layout()
+    return fig
+
+
+def figure_b4_risk_partition_and_corrected_fcf(*,
+        firms: Dict[str, Dict],
+        figsize: Tuple[float, float] = (12.0, 8.0),
+        ) -> plt.Figure:
+    """Figure B.4 — Risk partition + corrected cash flow (two panels).
+
+    Upper panel: stacked bars per firm decomposing the second-valley
+    Layer-4 risk contribution ``π_2V`` into ``π_2V_sys`` (systematic,
+    already carried by the Phase-2 beta jump in Eq B.3) and
+    ``π_2V_idio`` (idiosyncratic, carried by the firm-specific premium
+    with ``alpha_4_adj`` per Eq B.13). In percentage points.
+
+    Lower panel: per-firm projected free cash flow before (``FCF_proj``)
+    and after (``FCF_2V = FCF_proj * λ_2V``) the unified-lambda
+    revenue-retreat factor, year by year. Phase 2 window shaded.
+
+    Parameters
+    ----------
+    firms : dict
+        Maps firm slug → dict with keys:
+          ``label`` (str), ``color`` (str hex),
+          ``layer4_share`` (float), ``ai_substitution_potential`` (float),
+          ``alpha_4`` (float), ``alpha_4_sys`` (float),
+          ``amp_base`` (float),
+          ``fcf_proj`` (list[float], USD), ``lambda_vector`` (list[float]),
+          ``phase_boundaries`` (tuple[int, int]) — (phase_1_end_year,
+          phase_2_end_year).
+    """
+    fig, (ax_top, ax_bot) = plt.subplots(2, 1, figsize=figsize,
+                                          gridspec_kw={"height_ratios": [1, 1.3]})
+
+    # --- Upper panel: π_2V_sys vs π_2V_idio (stacked bars per firm) ---
+    firm_slugs = list(firms.keys())
+    x = np.arange(len(firm_slugs))
+    bar_width = 0.45
+
+    sys_vals = []
+    idio_vals = []
+    totals = []
+    for slug in firm_slugs:
+        f = firms[slug]
+        amp = f["amp_base"] + f["ai_substitution_potential"]
+        # π_2V_sys: systematic share, carried by the beta jump.
+        pi_sys = f["alpha_4_sys"] * f["layer4_share"] * amp * 100.0  # pp
+        # π_2V_idio: idiosyncratic, in the firm-specific premium.
+        alpha_adj = max(0.0, f["alpha_4"] - f["alpha_4_sys"])
+        pi_idio = alpha_adj * f["layer4_share"] * amp * 100.0        # pp
+        sys_vals.append(pi_sys)
+        idio_vals.append(pi_idio)
+        totals.append(pi_sys + pi_idio)
+
+    bars_sys = ax_top.bar(x, sys_vals, bar_width,
+                           color="#7B7D7D", label="π_2V_sys (systematic — carried by β jump, Eq B.12)",
+                           edgecolor="black", linewidth=0.5)
+    bars_idio = ax_top.bar(x, idio_vals, bar_width, bottom=sys_vals,
+                            color=[firms[s]["color"] for s in firm_slugs],
+                            label="π_2V_idio (idiosyncratic — α_4_adj, Eq B.13)",
+                            edgecolor="black", linewidth=0.5)
+
+    for i, (slug, total) in enumerate(zip(firm_slugs, totals)):
+        ax_top.text(i, sys_vals[i] / 2, f"{sys_vals[i]:.2f}pp",
+                    ha="center", va="center", fontsize=8.5, color="white",
+                    fontweight="bold")
+        ax_top.text(i, sys_vals[i] + idio_vals[i] / 2, f"{idio_vals[i]:.2f}pp",
+                    ha="center", va="center", fontsize=8.5, color="white",
+                    fontweight="bold")
+        ax_top.text(i, total + 0.15, f"π_2V = {total:.2f}pp",
+                    ha="center", fontsize=9, fontweight="bold")
+
+    ax_top.set_xticks(x)
+    ax_top.set_xticklabels([firms[s]["label"] for s in firm_slugs])
+    ax_top.set_ylabel("Layer-4 risk contribution (percentage points)")
+    ax_top.set_title("Upper panel — Risk partition (Eq B.12–B.13): "
+                     "systematic vs idiosyncratic share of the second-valley risk",
+                     fontsize=10, pad=8)
+    ax_top.legend(loc="upper left", fontsize=9, framealpha=0.92)
+    ax_top.grid(True, axis="y", linestyle=":", alpha=0.4)
+    ax_top.set_axisbelow(True)
+    ax_top.set_ylim(0, max(totals) * 1.20)
+
+    # --- Lower panel: FCF before / after lambda ---
+    # Per firm, side-by-side grouped bars for each year.
+    n_firms = len(firm_slugs)
+    n_years = len(firms[firm_slugs[0]]["fcf_proj"])
+    group_width = 0.9
+    bar_w = group_width / (2 * n_firms)
+
+    # Phase shading determined from the first firm's boundaries (assume same).
+    p1_end, p2_end = firms[firm_slugs[0]]["phase_boundaries"]
+    for year in range(1, n_years + 1):
+        if year <= p1_end:
+            color = PHASE_1_COLOR
+            alpha = 0.06
+        elif year <= p2_end:
+            color = PHASE_2_COLOR
+            alpha = 0.15
+        else:
+            color = PHASE_3_COLOR
+            alpha = 0.06
+        ax_bot.axvspan(year - 0.5, year + 0.5, color=color, alpha=alpha, zorder=0)
+
+    for fi, slug in enumerate(firm_slugs):
+        f = firms[slug]
+        fcf_proj = [c / 1e6 for c in f["fcf_proj"]]
+        fcf_2v = [c * l / 1e6 for c, l in zip(f["fcf_proj"], f["lambda_vector"])]
+        years = np.arange(1, n_years + 1)
+        offset_proj = -group_width / 2 + (2 * fi) * bar_w + bar_w / 2
+        offset_2v = -group_width / 2 + (2 * fi + 1) * bar_w + bar_w / 2
+        ax_bot.bar(years + offset_proj, fcf_proj, bar_w,
+                   color="#BBBBBB", edgecolor="black", linewidth=0.4,
+                   label=f"{f['label']} — FCF_proj" if fi == 0 else None,
+                   alpha=0.75)
+        ax_bot.bar(years + offset_2v, fcf_2v, bar_w,
+                   color=f["color"], edgecolor="black", linewidth=0.4,
+                   label=f"{f['label']} — FCF_2V (× λ_2V)",
+                   alpha=0.9)
+
+    ax_bot.axhline(0, color="black", linewidth=0.7)
+    ax_bot.set_xticks(np.arange(1, n_years + 1))
+    ax_bot.set_xticklabels([f"Y{y}" for y in range(1, n_years + 1)])
+    ax_bot.set_xlabel("Year")
+    ax_bot.set_ylabel("Free cash flow (USD millions)")
+    ax_bot.set_title("Lower panel — Eq B.14: corrected free cash flow "
+                     "FCF_2V(t) = FCF_proj(t) · λ_2V(φ(t))",
+                     fontsize=10, pad=8)
+    ax_bot.legend(loc="upper left", fontsize=8.5, framealpha=0.92, ncol=2)
+    ax_bot.grid(True, axis="y", linestyle=":", alpha=0.4)
+    ax_bot.set_axisbelow(True)
+
+    # Phase labels at top of lower panel
+    y_top_bot = ax_bot.get_ylim()[1]
+    ax_bot.text((p1_end + 1) / 2, y_top_bot * 0.93, "Phase 1",
+                ha="center", fontsize=8.5, color="#555", style="italic")
+    ax_bot.text((p1_end + 1 + p2_end) / 2, y_top_bot * 0.93, "Phase 2",
+                ha="center", fontsize=8.5, color="#8B0000", style="italic")
+    ax_bot.text((p2_end + n_years + 1) / 2, y_top_bot * 0.93, "Phase 3",
+                ha="center", fontsize=8.5, color="#0B6E4F", style="italic")
+
+    fig.suptitle("Appendix B.2.6 — Figure B.4: Risk partition and corrected cash flow",
+                 fontsize=11, y=0.995)
+    fig.tight_layout()
+    return fig
+
+
+def figure_b5_four_path_reconciliation(*,
+        firms: Dict[str, Dict],
+        funding_stage_lines: Dict[str, float],
+        figsize: Tuple[float, float] = (12.0, 6.5),
+        ) -> plt.Figure:
+    """Figure B.5 — Four-path valuation reconciliation (the most important
+    figure of subsection B.2.6).
+
+    For each case firm, four bars side by side: ``V0_classical``,
+    ``V0_layered_A``, ``V0_twophase_B``, ``V0_dualchannel``. P10–P90
+    Monte Carlo error bars on every bar. Dotted horizontal reference
+    lines for the Carta funding-stage medians.
+
+    The caption notes that the dual-channel bar is the recommended
+    figure for practitioners; the other three are diagnostic
+    comparators.
+
+    Parameters
+    ----------
+    firms : dict
+        Maps firm slug → dict with keys:
+          ``label`` (str), ``color`` (str hex),
+          ``v0_classical``, ``v0_layered_A``,
+          ``v0_twophase_B``, ``v0_dualchannel`` (floats in USD),
+          ``bands`` (dict path_key → {p10, p50, p90}).
+    funding_stage_lines : dict
+        Maps short label → median pre-money valuation in USD.
+        Typically ``{"seed": 16e6, "series_a": 49.3e6, "series_b": 118.9e6}``.
+    """
+    firm_slugs = list(firms.keys())
+    n_firms = len(firm_slugs)
+    fig, axes = plt.subplots(1, n_firms, figsize=figsize, sharey=False)
+    if n_firms == 1:
+        axes = [axes]
+
+    path_keys = ("v0_classical", "v0_layered_A",
+                 "v0_twophase_B", "v0_dualchannel")
+    path_labels = ("Classical\nDamodaran",
+                   "Appendix A\nLayered DCF",
+                   "Appendix B\nTwo-phase",
+                   "B.2.6\nDual-channel\n(recommended)")
+    path_colors = ("#7B7D7D", "#888888", "#A0A0A0", None)  # last filled per firm
+
+    for ax, slug in zip(axes, firm_slugs):
+        f = firms[slug]
+        x = np.arange(len(path_keys))
+        values = [f[k] / 1e6 for k in path_keys]
+
+        # Error bars from MC bands when available.
+        yerr_low: List[float] = []
+        yerr_high: List[float] = []
+        for k in path_keys:
+            bands = f.get("bands", {}).get(k, {})
+            if bands:
+                p10 = bands["p10"] / 1e6
+                p50 = bands["p50"] / 1e6
+                p90 = bands["p90"] / 1e6
+                # Centre the bar on the point estimate (values[i]) and
+                # express error bars as distance from THAT estimate.
+                # We deliberately use the point estimate, not the MC
+                # median, as the bar height (Damodaran convention).
+                pt = values[path_keys.index(k)]
+                yerr_low.append(max(0.0, pt - p10))
+                yerr_high.append(max(0.0, p90 - pt))
+            else:
+                yerr_low.append(0.0)
+                yerr_high.append(0.0)
+
+        colors = list(path_colors[:-1]) + [f["color"]]
+        bars = ax.bar(x, values, 0.6, color=colors,
+                      edgecolor="black", linewidth=0.5,
+                      yerr=[yerr_low, yerr_high], capsize=6,
+                      ecolor="#333", error_kw={"linewidth": 1.2})
+
+        for bar, v in zip(bars, values):
+            ax.text(bar.get_x() + bar.get_width() / 2,
+                    v + max(values) * 0.04,
+                    f"${v:.1f}M",
+                    ha="center", fontsize=9.5, fontweight="bold")
+
+        # Set the y limit before drawing reference lines, so we can
+        # filter out lines that would fall outside the visible band
+        # (this avoids the annotation-overflow bug we observed when
+        # Series B = $119M was rendered on the DataFlow Pro subplot
+        # whose y_max sits near $95M).
+        ax.set_xticks(x)
+        ax.set_xticklabels(path_labels, fontsize=9)
+        ax.set_ylabel("Enterprise Value (USD millions)")
+        ax.set_title(f"{f['label']}", fontsize=11, pad=8)
+        ax.grid(True, axis="y", linestyle=":", alpha=0.4)
+        ax.set_axisbelow(True)
+        ax.set_xlim(-0.5, len(path_keys) - 0.5 + 0.55)
+        # y_lim needs to accommodate point estimates + their P90 error
+        # bars + the funding-stage lines that fall inside the
+        # visible range.
+        y_max_from_bars = max(v + e for v, e in zip(values, yerr_high))
+        y_max = max(y_max_from_bars, max(values)) * 1.18
+        ax.set_ylim(0, y_max)
+
+        # Funding-stage reference lines + right-edge annotations,
+        # filtered to only those that lie within the visible y-band.
+        for stage_label, stage_amt in funding_stage_lines.items():
+            stage_m = stage_amt / 1e6
+            if stage_m < 0 or stage_m > y_max:
+                continue
+            ax.axhline(stage_m, linestyle=":", color="#888", alpha=0.6,
+                       linewidth=1.0)
+            # Anchor the annotation at the right edge of the plot
+            # using axis-fraction coords so it never spills into the
+            # neighbouring subplot or the suptitle area.
+            ax.text(0.995, stage_m, f"  {stage_label.replace('_', ' ').title()} "
+                                     f"(~${stage_m:.0f}M)",
+                    fontsize=8, color="#666", va="center", ha="right",
+                    transform=ax.get_yaxis_transform(),
+                    bbox=dict(boxstyle="round,pad=0.15",
+                              facecolor="white", edgecolor="none",
+                              alpha=0.75))
+
+    fig.suptitle("Appendix B.2.6 — Figure B.5: Four-path valuation reconciliation\n"
+                 "Dual-channel bar is the recommended figure for practitioners; "
+                 "the others are diagnostic comparators",
+                 fontsize=11, y=1.00)
+    fig.tight_layout()
+    return fig
