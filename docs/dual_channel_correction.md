@@ -380,3 +380,204 @@ mechanism.
   unified identity (lambda=1 everywhere AND delta_2V=0 reduces to
   two-phase(delta_2V=0)) and for the expected ordering under the
   documented per-firm calibration.
+
+---
+
+## 7. Worked example — NeuroCertify under the unified construction
+
+This section walks through Equations (B.14) and (B.15) applied to
+NeuroCertify, with every intermediate number shown. It is the
+counterpart of the worked example the proposal's Section 6 prescribes
+for the Insertion Package, applied to the unified-lambda construction
+of Section 3 above. All values are produced by the framework at
+commit `52c428c` (the head of the Sprint 9 commit chain) and can be
+reproduced by running `scripts/run_b26_figures.py` or by reading
+`src/dual_channel.py::v0_dualchannel_unified`.
+
+### 7.1 Inputs
+
+NeuroCertify is a Layer-6-rich, deep-tech medical-AI certification
+firm (Appendix A.3 of the paper). Its YAML fixtures
+(`config/parameters.yaml` section 10) carry:
+
+* **Macro context** (shared with DataFlow Pro):
+  * `risk_free_rate` rf = 4.25 %
+  * `equity_risk_premium` ERP = 5.50 %
+  * `terminal_growth_rate` g = 3.00 %
+
+* **Phase parameters** (lifecycle boundary Y2 / Y4):
+
+  | Phase | Years | β_unlevered | D/E | K_d spread |
+  |---|---|---:|---:|---:|
+  | 1 (growth)        | Y1–Y2 | 0.85 | 5 %  | 2.5 % |
+  | 2 (second valley) | Y3–Y4 | 1.10 | 12 % | 4.5 % |
+  | 3 (terminal)      | Y5    | 0.99 | 16 % | 3.5 % |
+
+  Effective tax rate τ = 6.38 % (Damodaran Healthcare IT, January 2026).
+
+* **Projected free cash flow** (`fcf_usd` in YAML):
+
+  ```
+  FCF_proj = [ −1.5 M, −0.8 M, 1.2 M, 5.5 M, 12.0 M ]
+  ```
+
+* **Dual-channel calibration** (unified construction, `dual_channel:`
+  block in YAML):
+  * `lambda_2V_phase1` = 1.00 (no retreat outside the valley)
+  * `lambda_2V_phase2` = 0.95 (mild transient compression — Layer-6
+    protects against the second valley)
+  * `lambda_2V_phase3` = 0.95 (mild permanent compression — the
+    documented per-firm default for NeuroCertify per the
+    `lambda_2V_phase3_defaults` table)
+  * `delta_2V` = 0 (retired in the unified construction; its
+    information is absorbed into `lambda_2V_phase3`)
+
+### 7.2 Step 1 — Phase-conditional WACC trajectory (Eq B.6)
+
+For each year, the framework computes the levered beta from the
+phase β and the phase D/E (Eq B.3), the cost of equity (Eq B.4), and
+the WACC from the standard textbook combination (Eq B.6):
+
+| Year | Phase | β_levered | K_e | K_d | WACC(t) |
+|---|---|---:|---:|---:|---:|
+| Y1 | 1 | 0.8898 | 9.1438 % | 6.7500 % | **9.0093 %** |
+| Y2 | 1 | 0.8898 | 9.1438 % | 6.7500 % | **9.0093 %** |
+| Y3 | 2 | 1.2236 | 10.9797 % | 8.7500 % | **10.6810 %** |
+| Y4 | 2 | 1.2236 | 10.9797 % | 8.7500 % | **10.6810 %** |
+| Y5 | 3 | 1.1486 | 10.5106 % | 7.7500 % | **10.0616 %** |
+
+The 1.67-pp Phase-2 jump is the discount-rate-side correction
+Appendix B already captures. For NeuroCertify the jump is modest
+because Layer 6 protection mutes the β jump (Phase-2 β = 1.10 vs
+1.50 for DataFlow Pro under the same framework).
+
+### 7.3 Step 2 — Lambda vector (Eq B.14)
+
+The unified construction extends Eq B.14 to Phase 3. The lambda
+vector that the framework builds for NeuroCertify is:
+
+```
+λ_2V(φ(t)) = [ 1.00, 1.00, 0.95, 0.95, 0.95 ]   for t = Y1..Y5
+```
+
+Multiplying year by year:
+
+| Year | FCF_proj      | × λ      | FCF_2V         |
+|---|---:|---:|---:|
+| Y1 | −1,500,000   | 1.0000  | −1,500,000.00 |
+| Y2 |   −800,000   | 1.0000  |   −800,000.00 |
+| Y3 |  1,200,000   | 0.9500  |  1,140,000.00 |
+| Y4 |  5,500,000   | 0.9500  |  5,225,000.00 |
+| Y5 | 12,000,000   | 0.9500  | 11,400,000.00 |
+
+The Phase-2 entries (Y3-Y4) reflect the transient compression — a
+mild 5 % retreat consistent with a defensibility-rich firm. The Y5
+entry reflects the permanent compression to the new lower steady
+state (the residual scarring previously carried by `delta_2V`).
+
+### 7.4 Step 3 — Compounded discount factors (Eq B.10) and PVs
+
+Damodaran (2016)'s `Myth 4.3` specifies that under time-varying
+rates the discount factor for year-t cash flow is the running product
+of per-year factors, not (1 + r)^t. The framework consumes this in
+`two_phase_dcf`:
+
+```
+cum_factor(t) = ∏_{s=1..t} (1 + WACC(s))
+```
+
+| Year | WACC(t)    | cum_factor    | PV(FCF_2V)        |
+|---|---:|---:|---:|
+| Y1 |  9.0093 % | 1.090093     | −1,376,028.91 |
+| Y2 |  9.0093 % | 1.188304     |   −673,228.65 |
+| Y3 | 10.6810 % | 1.315226     |    866,771.21 |
+| Y4 | 10.6810 % | 1.455705     |  3,589,326.36 |
+| Y5 | 10.0616 % | 1.602173     |  7,115,337.67 |
+
+**Sum of explicit-period PVs:**
+
+```
+PV_explicit  =  Σ_t [ FCF_2V(t) / cum_factor(t) ]
+             =  −1,376,028.91 − 673,228.65 + 866,771.21
+                + 3,589,326.36 + 7,115,337.67
+             =  9,522,177.68 USD
+```
+
+The first two years are negative (the firm is burning cash); the
+last three are positive and dominate.
+
+### 7.5 Step 4 — Terminal value (Eq B.9 with δ_2V retired)
+
+The terminal value uses the Phase-3 WACC and the **multiplied** last
+FCF (Y5 already passed through the lambda factor in Step 2). Under
+the unified construction, `δ_2V` is set to 0 — its information now
+lives in `lambda_phase3 = 0.95`, applied to the Y5 perpetuity base:
+
+```
+TV_at_T  =  FCF_2V(Y5) · (1 + g) / (WACC_3 − g)
+         =  11,400,000.00 · (1 + 0.03) / (0.100616 − 0.03)
+         =  11,400,000.00 · 1.03 / 0.070616
+         =  166,278,593.11 USD
+```
+
+Discount the terminal value back to t=0 using the same compounded
+factor used for Y5:
+
+```
+TV_PV  =  TV_at_T / cum_factor(Y5)
+       =  166,278,593.11 / 1.602173
+       =  103,783,187.41 USD
+```
+
+### 7.6 Step 5 — Enterprise value (Eq B.15)
+
+```
+V0_dualchannel  =  PV_explicit  +  TV_PV
+                =     9,522,177.68  +  103,783,187.41
+                =   113,305,365.08 USD
+```
+
+The framework's `v0_dualchannel_unified` returns exactly this value
+to the cent — the equality is regression-tested in
+`tests/test_dual_channel_unified.py::TestUnifiedIdentity`.
+
+### 7.7 Diagnostics — the numerator channel effect
+
+The numerator-channel effect isolates the contribution of the
+cash-flow side. To make the diagnostic like-for-like, we compare
+V0_dualchannel against the two-phase EV computed under the **same**
+δ_2V = 0 (otherwise the comparison conflates the cash-flow
+correction with the legacy terminal-value drag):
+
+```
+V0_twophase_B (δ_2V = 0)  =  119,376,661.01 USD
+V0_dualchannel (unified)  =  113,305,365.08 USD
+                              -----------
+Numerator channel effect  =    6,071,295.93 USD
+```
+
+For NeuroCertify, the cash-flow channel removes ~ 6.0 M USD from the
+two-phase headline — about 5 % of EV. Small, as expected for a
+Layer-6-rich firm whose `lambda_2V` factors are close to 1.0.
+
+(For DataFlow Pro, with `lambda_phase2 = 0.70` and
+`lambda_phase3 = 0.57`, the same channel effect is approximately
+US$ 32 M — about 36 % of the like-for-like two-phase headline.
+That is the headline of Figure B.4's lower panel: the cash-flow
+channel scales with the firm's Layer-4 exposure.)
+
+### 7.8 Cross-references
+
+* Manuscript Eqs (B.14), (B.15), and Section 6 walk this example
+  through in prose form for the Insertion Package.
+* The framework implementation that produces every number above is
+  `src/dual_channel.py::v0_dualchannel_unified`.
+* The reconciliation against the other three valuation paths
+  (classical, layered_A, two-phase) is in
+  `outputs/figures/fig_b26_four_path_reconciliation.png` and in the
+  rendered multi-audience report (`app/tabs/tab_reports.py`).
+* The same workflow applies to DataFlow Pro by substituting the
+  per-firm FCF projection, phase parameters, and the corresponding
+  `lambda_2V_phase2_defaults["dataflow"] = 0.70` /
+  `lambda_2V_phase3_defaults["dataflow"] = 0.57` values from the
+  YAML.
