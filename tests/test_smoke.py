@@ -24,6 +24,29 @@ class TestImports(unittest.TestCase):
         self.assertTrue(hasattr(stack_layers, "KnowledgeStack"))
         self.assertTrue(hasattr(valuation, "damodaran_inverted_discount"))
 
+    def test_streamlit_tabs_import(self):
+        """Sprint 7 — the new tab_reports module and its integration in
+        streamlit_app must import without error (catches signature drift
+        between src.reporting and the Streamlit tab)."""
+        from app.tabs import tab_reports, tab_appendix_b
+        from app import streamlit_app
+        self.assertTrue(hasattr(tab_reports, "render"))
+        self.assertTrue(hasattr(tab_appendix_b, "render"))
+        self.assertTrue(hasattr(streamlit_app, "main"))
+
+    def test_b26_figures_in_pdf_manifest(self):
+        """Sprint 7 — the three B.2.6 figures (6-bis/B.3, B.4, B.5) must
+        appear in the PDF export manifest so the static PDF carries
+        them alongside the existing Appendix B figures."""
+        from app.shared.pdf_export import FIGURE_MANIFEST
+        b26_files = {entry[1] for entry in FIGURE_MANIFEST
+                      if "B.2.6" in entry[0]}
+        self.assertEqual(b26_files, {
+            "fig_b26_geometry.png",
+            "fig_b26_risk_partition_and_lambda_fcf.png",
+            "fig_b26_four_path_reconciliation.png",
+        })
+
 
 class TestInvertedDiscountInvariants(unittest.TestCase):
     """The inverted discount must reduce to classical when below threshold,

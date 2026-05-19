@@ -99,6 +99,17 @@ FIGURE_MANIFEST: List[Tuple[str, str, str]] = [
      "Two-phase WACC trajectory for NeuroCertify and DataFlow Pro."),
     ("Appendix B — Two-phase CAPM/WACC", "fig20_two_phase_eva_trajectory.png",
      "Phase-conditional EVA vs classical single-WACC EVA."),
+    # Appendix B.2.6 — Dual-channel correction (Sprint 5)
+    ("Appendix B.2.6 — Dual-channel", "fig_b26_geometry.png",
+     "Figure 6-bis / B.3 — Dual-channel geometry: revenue compressed by λ_2V "
+     "(numerator) and WACC rising via β jump (denominator) in the Phase-2 window."),
+    ("Appendix B.2.6 — Dual-channel", "fig_b26_risk_partition_and_lambda_fcf.png",
+     "Figure B.4 — Risk partition (Eq B.12/B.13) and corrected free cash flow "
+     "(Eq B.14: FCF_2V = FCF_proj · λ_2V) for the two case firms."),
+    ("Appendix B.2.6 — Dual-channel", "fig_b26_four_path_reconciliation.png",
+     "Figure B.5 — Four-path valuation reconciliation: classical, layered, "
+     "two-phase, and the recommended dual-channel (unified). MC P10-P90 bands "
+     "and Carta funding-stage reference lines included."),
     # Appendix D — Streaming + fiscal
     ("Appendix D — Streaming case", "fig24_streaming_price_decomp.png",
      "Streaming price decomposition under 3 substitution scenarios."),

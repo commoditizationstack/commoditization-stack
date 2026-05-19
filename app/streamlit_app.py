@@ -40,6 +40,7 @@ from app.tabs import (
     tab_appendix_e,
     tab_appendix_f,
     tab_appendix_g,
+    tab_reports,
     tab_pdf_export,
     tab_about,
 )
@@ -111,6 +112,7 @@ def main():
         "🏢 Appendix E",
         "🔗 Appendix F",
         "⚖️ Appendix G",
+        "📋 Reports",
         "📄 Export PDF",
         "ℹ️ About",
     ])
@@ -146,8 +148,10 @@ def main():
     with tabs[14]:
         tab_appendix_g.render(global_params)
     with tabs[15]:
-        tab_pdf_export.render()
+        tab_reports.render(global_params)
     with tabs[16]:
+        tab_pdf_export.render()
+    with tabs[17]:
         tab_about.render()
 
 
