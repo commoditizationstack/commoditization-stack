@@ -167,15 +167,20 @@ class TestGenerateReport(unittest.TestCase):
 
     def test_all_audiences_share_the_same_figures(self) -> None:
         """Acceptance check 8.2: every shared number is identical
-        across audiences. We assert this by checking that each EV
-        figure appears in every audience's body."""
+        across audiences. Sprint 6 templates render EVs as
+        ``$<X>M`` rather than as their key names, so we assert the
+        same FORMATTED value is present in every audience's body."""
         bodies = {a: generate_report(a, self.SAMPLE_RUN).body_markdown
                   for a in Audience}
-        for ev_label in ("v0_classical", "v0_layered_A",
-                         "v0_twophase_B", "v0_dualchannel"):
+        # The SAMPLE_RUN's four EVs render to these formatted strings
+        # via src.reporting._fmt_usd. If a template inadvertently drops
+        # one of the bars, the assertion below fails.
+        expected_values = ("$126.5M", "$69.3M", "$113.9M", "$111.5M")
+        for value_str in expected_values:
             for a, body in bodies.items():
-                self.assertIn(ev_label, body,
-                              msg=f"{a.value} report missing {ev_label}")
+                self.assertIn(value_str, body,
+                              msg=(f"{a.value} report missing value {value_str} — "
+                                   "mutual consistency (8.2) violated"))
 
     def test_uses_damodaran_and_carta_citations(self) -> None:
         r = generate_report(Audience.INVESTOR, self.SAMPLE_RUN)
