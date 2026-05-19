@@ -1,0 +1,68 @@
+{
+  "_meta": {
+    "firm": "dataflow",
+    "scenario": "dataflow_pro",
+    "purpose": "Regression baseline for the three existing valuation paths (classical Damodaran, Appendix A layered DCF, Appendix B two-phase DCF). Subsequent additive changes (e.g. the dual-channel correction of subsection B.2.6) MUST NOT alter these numbers."
+  },
+  "path_1_classical_damodaran": {
+    "enterprise_value_usd": 75781028.92492467,
+    "pv_explicit_period_usd": 7566980.804806137,
+    "pv_terminal_usd": 68214048.12011853,
+    "discount_rate": 0.11371687466300001
+  },
+  "path_2_layered_dcf": {
+    "enterprise_value_usd": 28268004.398499064,
+    "pv_explicit_period_usd": 5714921.9874467775,
+    "pv_terminal_usd": 22553082.411052287,
+    "discount_rates_by_year": [
+      0.18466687466300002,
+      0.18466687466300002,
+      0.18466687466300002,
+      0.164666874663,
+      0.164666874663
+    ]
+  },
+  "path_3_two_phase_dcf": {
+    "enterprise_value_usd": 55405103.26879858,
+    "pv_explicit_usd": 7430185.547598084,
+    "pv_terminal_usd": 47974917.721200496,
+    "phase_3_wacc": 0.11194585292452827,
+    "yearly": [
+      {
+        "year": 1,
+        "phase": "phase_1_growth",
+        "wacc": 0.10387198846153846,
+        "ke": 0.105286658,
+        "kd": 0.07250000000000001
+      },
+      {
+        "year": 2,
+        "phase": "phase_1_growth",
+        "wacc": 0.10387198846153846,
+        "ke": 0.105286658,
+        "kd": 0.07250000000000001
+      },
+      {
+        "year": 3,
+        "phase": "phase_2_second_valley",
+        "wacc": 0.13396145652173916,
+        "ke": 0.1366931375,
+        "kd": 0.1225
+      },
+      {
+        "year": 4,
+        "phase": "phase_2_second_valley",
+        "wacc": 0.13396145652173916,
+        "ke": 0.1366931375,
+        "kd": 0.1225
+      },
+      {
+        "year": 5,
+        "phase": "phase_3_terminal",
+        "wacc": 0.11194585292452827,
+        "ke": 0.1139853491,
+        "kd": 0.0825
+      }
+    ]
+  }
+}

@@ -948,3 +948,107 @@ funding_stages_carta:
     dataflow_ai_native:
       pre_seed: 10.0
       seed: 6.0
+
+# ----------------------------------------------------------------------------
+# 26. DUAL CHANNEL CORRECTION (Subsection B.2.6) — PROVISIONAL
+# ----------------------------------------------------------------------------
+# Equations (B.12)–(B.15) of the Insertion Package for subsection B.2.6.
+#
+# The two-phase reformulation of Appendix B (Eqs B.3–B.11) corrects the
+# DENOMINATOR of the DCF (phase-conditional WACC). The dual-channel
+# correction additionally corrects the NUMERATOR: during the Phase-2
+# window, the projected free cash flow is multiplied by a phase-conditional
+# revenue-retreat factor lambda_2V(phi(t)). It also partitions the second-
+# valley risk into a systematic component (already carried by the Phase-2
+# beta jump in Eq B.3) and an idiosyncratic component (carried by the
+# layer-decomposed firm-specific premium), removing the double-counting
+# that would otherwise inflate the total risk premium.
+#
+# IMPORTANT — These parameters are CALIBRATION PARAMETERS, not data-
+# estimated. They are registered here for the upcoming V0_dualchannel path
+# but are NOT YET CONSUMED by any function — adding them must leave the
+# three existing valuation paths (classical Damodaran, Appendix A layered,
+# Appendix B two-phase) byte-identical. Empirical calibration against
+# firm-level transaction data is reserved for future work.
+# ----------------------------------------------------------------------------
+dual_channel:
+  enabled: false                          # Master flag — V0_dualchannel path off until Sprint 2
+  # --- Eq B.14: phase-conditional revenue-retreat factor lambda_2V ---
+  lambda_2V_phase1: 1.00                  # No retreat outside the valley
+  lambda_2V_phase3: 1.00                  # No retreat after the valley
+  # Per-firm Phase-2 defaults (lambda < 1 means revenue compressed during the valley)
+  lambda_2V_phase2_defaults:
+    neurocertify: 0.95                    # Layer-6-rich — mild retreat
+    dataflow: 0.70                        # Layer-4-heavy — severe retreat
+  # --- Calibration helper for lambda_2V_phase2 (auditable, mirrors delta_2V style) ---
+  # lambda_2V_phase2 = clamp(1 - k_L4 * layer4_share + k_L6 * layer6_share, lower, upper)
+  lambda_2V_calibration:
+    k_L4: 0.55                            # Layer-4 weight (substitution risk)
+    k_L6: 0.40                            # Layer-6 protection weight
+    lower_bound: 0.50
+    upper_bound: 1.00
+  # --- Eqs B.12–B.13: systematic/idiosyncratic partition of Layer-4 risk ---
+  # alpha_4 (Layer-4 coefficient) currently sits at 0.08 in valuation_layered.
+  # The systematic share is already represented in the Phase-2 beta jump of
+  # Eq B.3; alpha_4_adj = alpha_4 - alpha_4_sys is used ONLY in the new
+  # B.2.6 path. The Appendix A path keeps using the unadjusted alpha_4.
+  alpha_4_sys: 0.03                       # Calibration parameter — starting point
+  # --- Monte Carlo sampling specs (consumed by Sprint 3) ---
+  monte_carlo:
+    lambda_2V_phase2_distribution: triangular   # or truncated_normal
+    lambda_2V_phase2_half_width: 0.10           # ±0.10 around per-firm calibration
+    lambda_2V_phase2_clamp_lower: 0.50
+    lambda_2V_phase2_clamp_upper: 1.00
+    alpha_4_sys_distribution: triangular
+    alpha_4_sys_half_width: 0.015               # ±0.015 around 0.03
+    alpha_4_sys_clamp_lower: 0.0
+    alpha_4_sys_clamp_upper: 0.08               # Cannot exceed alpha_4 itself
+
+# ----------------------------------------------------------------------------
+# 27. MACRO CONTEXT (Part B — Macro Integration Proposal) — PROVISIONAL
+# ----------------------------------------------------------------------------
+# Explicit, user-editable macro assumptions on which the valuation rests.
+# These are INPUTS, never silent defaults — the user, not the tool, sets
+# the macro regime.
+#
+# IMPORTANT — None of these parameters affect the four enterprise values
+# (V0_classical, V0_layered_A, V0_twophase_B, V0_dualchannel). They drive
+# presentation (multi-audience reports), the funding-stage reference lines,
+# the evidentiary-bar narrative framing, and the macro-sensitivity view
+# ONLY. Changing macro_regime or funding_environment must leave every EV
+# byte-identical (regression-tested in Sprint 6).
+#
+# Not yet consumed — added in Sprint 5 (report generator) and Sprint 6
+# (macro-sensitivity view).
+# ----------------------------------------------------------------------------
+macro_context:
+  enabled: false                          # Master flag — Part B off until Sprint 5
+  # --- Surfaced from existing section 24 (kept exogenous per B.2.1) ---
+  # risk_free_rate and equity_risk_premium continue to live under `macro:`
+  # above; this section is the place where the UI surfaces them and groups
+  # them with the new presentation-layer parameters below.
+  # --- Positioning dial (presentation only, NOT a DCF input) ---
+  macro_regime: 0.5                       # 0 = normal-technology reading; 1 = structural-change reading
+  # --- Funding-environment enum (presentation + reference-line scaling only) ---
+  funding_environment: baseline           # one of: abundant | baseline | crowded
+  funding_environment_options:
+    - abundant
+    - baseline
+    - crowded
+  # Per-environment scaling of the seed reference line. Affects ONLY the
+  # narrative framing and the position of the dotted seed reference in
+  # figures — never the DCF computation.
+  seed_round_size_by_environment:
+    abundant: 22000000                    # Higher cheque sizes (loose market)
+    baseline: 16000000                    # Carta Q3 2025 median
+    crowded:  11000000                    # Smaller cheques (concentrated market)
+  # --- Macro-sensitivity view spec (consumed in Sprint 6) ---
+  macro_sensitivity:
+    macro_regime_grid: [0.0, 0.25, 0.5, 0.75, 1.0]
+    # Transmission channel: macro_regime widens MC dispersion and the
+    # sampling ranges of the second-valley parameters (delta_2V, lambda_2V)
+    # without rescaling the central estimate. The channel must be
+    # disclosed in the report — never hidden.
+    transmission_channel: "widen_mc_dispersion_and_second_valley_ranges"
+    central_estimate_preserved_at_macro_regime: 0.5
+
