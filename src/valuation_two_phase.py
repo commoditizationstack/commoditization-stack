@@ -244,6 +244,7 @@ def two_phase_dcf(
     phases: PhaseParameters,
     terminal_growth_rate: float,
     second_valley_drag: float = 0.0,
+    cash_flow_multipliers: Optional[List[float]] = None,
 ) -> Dict[str, float]:
     """Two-phase DCF with compounded discount factors, as Damodaran (2016)
     explicitly recommends for time-varying rates.
@@ -253,23 +254,57 @@ def two_phase_dcf(
     Damodaran's "Musings on Markets" blog post specifies. The terminal
     value is computed with the Phase-3 WACC and reduced by the
     second-valley drag.
+
+    Parameters
+    ----------
+    cash_flow_multipliers : list of float, optional
+        Year-by-year multiplier applied to ``fcf_by_year`` before
+        discounting. Defaults to all-ones, in which case the function
+        produces exactly the legacy behaviour (regression-tested by
+        tests/test_regression_baseline.py).
+
+        This hook supports the dual-channel correction of subsection
+        B.2.6 (Eq B.14–B.15 of the Insertion Package): the caller passes
+        a phase-conditional ``lambda_2V`` vector that compresses
+        projected free cash flow during the Phase-2 window. Outside
+        Phase 2 the multiplier should equal 1.0 — see
+        ``v0_dualchannel`` for the canonical construction. The terminal
+        value uses the multiplied last FCF as its perpetuity base; with
+        ``lambda_2V(phase_3) = 1.0`` (the normative case) this is
+        identical to the unmultiplied last FCF.
     """
     n_years = len(fcf_by_year)
+    if cash_flow_multipliers is None:
+        multipliers = [1.0] * n_years
+    else:
+        if len(cash_flow_multipliers) != n_years:
+            raise ValueError(
+                f"cash_flow_multipliers has length {len(cash_flow_multipliers)}; "
+                f"expected {n_years} to match fcf_by_year."
+            )
+        multipliers = [float(m) for m in cash_flow_multipliers]
+
     yearly_wacc = []
     for year in range(1, n_years + 1):
         w = two_phase_wacc(year, risk_free_rate, equity_risk_premium, phases)
         yearly_wacc.append(w["wacc"])
 
     # PV of explicit period using compounded discount factors
+    adjusted_fcf = [f * m for f, m in zip(fcf_by_year, multipliers)]
     pv_explicit = 0.0
     cum_factor = 1.0
-    for t, (fcf, r_t) in enumerate(zip(fcf_by_year, yearly_wacc), start=1):
+    for t, (fcf, r_t) in enumerate(zip(adjusted_fcf, yearly_wacc), start=1):
         cum_factor *= (1.0 + r_t)
         pv_explicit += fcf / cum_factor
 
-    # Terminal value using Phase-3 WACC
+    # Terminal value using Phase-3 WACC. The perpetuity base uses the
+    # multiplied last FCF so that the formula is internally consistent
+    # under any lambda trajectory the caller may supply. When
+    # multipliers[-1] == 1.0 (the normative case for Phase 3) this
+    # reduces to the unmultiplied last FCF and the legacy behaviour is
+    # preserved.
     phase_3_wacc = yearly_wacc[-1]
-    last_fcf = fcf_by_year[-1]
+    last_fcf = adjusted_fcf[-1]
     if phase_3_wacc <= terminal_growth_rate:
         tv_pv = 0.0
     else:
@@ -286,6 +321,7 @@ def two_phase_dcf(
         "yearly_wacc": yearly_wacc,
         "phase_3_wacc": phase_3_wacc,
         "compounded_discount_factor_T": cum_factor,
+        "cash_flow_multipliers": multipliers,
     }
 
 

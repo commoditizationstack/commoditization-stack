@@ -132,3 +132,26 @@ def firms_appendix_b() -> Dict[str, Any]:
 
 def sweeps() -> Dict[str, Any]:
     return dict(load_parameters()["sweeps"])
+
+
+def dual_channel() -> Dict[str, Any]:
+    """Provisional B.2.6 dual-channel correction parameters.
+
+    Source of truth: ``config/parameters.yaml`` section 26. Includes
+    ``enabled`` master flag, per-firm ``lambda_2V_phase2`` defaults, the
+    auditable calibration helper coefficients (``k_L4``, ``k_L6``), and
+    the systematic/idiosyncratic risk-partition coefficient
+    ``alpha_4_sys``. Consumed by :mod:`src.dual_channel`.
+    """
+    return dict(load_parameters()["dual_channel"])
+
+
+def macro_context() -> Dict[str, Any]:
+    """Provisional Part B macro-context parameters.
+
+    Source of truth: ``config/parameters.yaml`` section 27. Drives
+    presentation only (multi-audience reports, funding-stage reference
+    lines, macro-sensitivity view). Must never alter any DCF EV — that
+    invariant is regression-tested.
+    """
+    return dict(load_parameters()["macro_context"])
