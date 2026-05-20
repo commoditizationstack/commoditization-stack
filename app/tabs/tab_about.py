@@ -51,6 +51,6 @@ def render():
 
         ### Version
 
-        **Simulator v0.10** — May 2026
+        **Simulator v0.11** — May 2026
         """
     )

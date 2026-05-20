@@ -66,7 +66,30 @@ python scripts/build_deployment_report.py      # one-shot report bundling all fi
 jupyter notebook notebooks/                    # interactive exploration
 ```
 
-## Interactive Streamlit UI (recommended)
+## Production website (FastAPI + Next.js)
+
+The repository ships with the foundation for a public-facing website:
+
+- **Backend** ([`api/`](api/)) — FastAPI REST API exposing `src/` over
+  44 endpoints under `/api/v1/`. Containerised for Cloud Run via the
+  root [`Dockerfile`](Dockerfile). See [`docs/api.md`](docs/api.md) for
+  the endpoint reference. Run locally: `python scripts/run_api.py`.
+- **Frontend** ([`web/`](web/)) — Next.js 15 + Tailwind + shadcn/ui in
+  Carta-style design system, with two modes (Explore the framework /
+  Value your company) and a guided workflow with a jurisdiction gate.
+  Deployable to Vercel out of the box. See [`web/README.md`](web/README.md).
+- **CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) — runs
+  pytest on the backend and `tsc --noEmit` + `next build` on the
+  frontend.
+- **GCP deployment** ([`cloudbuild.yaml`](cloudbuild.yaml)) — one-shot
+  Cloud Build pipeline that pushes the API image to Artifact Registry
+  and deploys to Cloud Run.
+
+This stack replaces the legacy Streamlit app as the user-facing
+deployment target for the public website. The Streamlit app (below) is
+retained as an internal "lab" surface for parameter exploration.
+
+## Interactive Streamlit UI (legacy / lab mode)
 
 The repository ships with a complete Streamlit interface that exposes the full
 framework in a navigable application with 18 tabs covering every section of the
@@ -141,6 +164,7 @@ Contributions, parameter critiques, jurisdictional case studies, alternative K7 
 
 ## Version history
 
+- **v0.11** (May 2026): production website foundation — FastAPI backend at `api/` exposing the full `src/` core as 44 REST endpoints under `/api/v1/` (valuation / sensitivity / migration / jurisdictional / layers / appendices D-G / reports / meta); Next.js 15 + Tailwind + shadcn/ui frontend at `web/` with Carta-style design system, two-mode router (Explore framework vs Value your company), guided workflow with mandatory jurisdiction gate, full five-step valuation workflow (Jurisdictions → Company → Results → Sensitivity → Report); Recharts-based chart components (four-path bar, layers trajectory line, K7 sweep, fragility scatter); Dockerfile + cloudbuild.yaml + vercel.json + GitHub Actions CI; docs/api.md operational reference. 150/150 backend tests passing; backend live-tested.
 - **v0.10** (May 2026): paper retitled to *The Cost Gradient of the Build — How Differential Commoditization Reshapes Entrepreneurship and Valuation: A Layer-Decomposed Risk Premium for the Post-AI Firm*; README, CITATION, About-tab realigned with the new title and subtitle; Appendix H (conceptual glossary, three sub-sections + H.4 note) materialized as `docs/glossary.md`; Appendix G supporting references annotated in `docs/appendix_g_references.md`; Mensch (2026) primary-source notes consolidated in `docs/mensch_2026_primary_source.md`; legacy `paper/The_End_of_the_Build.docx` renamed to `paper/The_Cost_Gradient_of_the_Build.docx`.
 - **v0.9** (May 2026): subsection B.2.6 dual-channel correction — partition of the second-valley risk effect (Eq B.12), adjusted Layer-4 coefficient (Eq B.13), phase-conditional revenue-retreat factor `lambda_2V` (Eq B.14), dual-channel enterprise value `V0_dualchannel` (Eq B.15) added as a fourth valuation path (`src/dual_channel.py`); unified Monte Carlo over the four valuation paths (`src/dual_channel_mc.py`); unified-lambda variant retiring `delta_2V` documented in `docs/dual_channel_correction.md`; figures B.3, B.4, B.5 (six-bis geometry, risk partition, four-path reconciliation) added; substantive multi-audience reports (`src/reporting.py`) with macro-sensitivity grid; empirical-calibration scaffolding for the B.2.6 parameters (`src/calibration.py`) with bootstrap CIs and explicit identifiability conditions, documented in `docs/empirical_calibration_program.md`; Streamlit integration of B.2.6 and multi-audience reports; regression baselines frozen in `tests/baselines/`. Figure A.3 and B.1 captions cross-referenced to Figure B.5.
 - **v0.8** (May 2026): UX polish — deployment report mode (Phase 1), unified palette + Sankey flow diagrams (Phase 2), named scenarios + Company Valuation workflow (Phase 3); horizontal tab strip restored after sidebar-nav experiment proved too destructive; internal file-path references scrubbed from user-facing strings.
