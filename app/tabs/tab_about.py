@@ -9,10 +9,9 @@ def render():
         """
         ### Paper
 
-        **The Cost Gradient of the Build: A Jurisdictionally Structured
-        Inversion of Damodaran's Key-Person Discount under Generative AI,
-        with a Seven-Layer Framework of the Knowledge-Production Stack
-        and the Strategic Reinvention of Innovation-Driven Entrepreneurship**
+        **The Cost Gradient of the Build — How Differential
+        Commoditization Reshapes Entrepreneurship and Valuation:
+        A Layer-Decomposed Risk Premium for the Post-AI Firm**
 
         *Arthur de Miranda Neto* (2026)
         [LinkedIn](https://www.linkedin.com/in/arthur-mneto/)
@@ -21,12 +20,13 @@ def render():
 
         ```bibtex
         @misc{demirandaneto2026costgradient,
-          title  = {The Cost Gradient of the Build:
-                    A Jurisdictionally Structured Inversion of
-                    Damodaran's Key-Person Discount under Generative AI},
+          title  = {The Cost Gradient of the Build --
+                    How Differential Commoditization Reshapes
+                    Entrepreneurship and Valuation:
+                    A Layer-Decomposed Risk Premium for the Post-AI Firm},
           author = {de Miranda Neto, Arthur},
           year   = {2026},
-          note   = {SSRN preprint}
+          note   = {Working paper}
         }
         ```
 
@@ -51,6 +51,6 @@ def render():
 
         ### Version
 
-        **Simulator v0.9** — May 2026
+        **Simulator v0.10** — May 2026
         """
     )
