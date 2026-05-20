@@ -8,3 +8,16 @@ venv/
 *.egg-info/
 build/
 dist/
+
+# Claude Code per-machine state (do not commit)
+.claude/
+
+# Frontend (Next.js) build + local env
+web/node_modules/
+web/.next/
+web/.turbo/
+web/.env*.local
+web/next-env.d.ts
+
+# Docker / Docker Compose local state
+.dockerignore.local
