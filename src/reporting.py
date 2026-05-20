@@ -742,10 +742,16 @@ def _render_researcher(figures: Dict[str, Any], foreground: str,
     )
     parts.append("")
 
-    # Assumption ledger with provenance
+    # Assumption ledger with provenance — human-readable provenance labels
+    # so the rendered table reads cleanly to a non-developer reader.
+    provenance_label = {
+        Provenance.USER_INPUT: "User input",
+        Provenance.CALIBRATION_PARAMETER: "Calibration (provisional)",
+        Provenance.COMPUTED_RESULT: "Computed",
+    }
     parts.append("## Assumption ledger (calibration provisional)")
     parts.append("")
-    parts.append("| Parameter | Value | Provenance |\n|---|---:|---|")
+    ledger_rows: List[str] = []
     for label, key, p_default in [
         ("λ_2V_phase2", "lambda_2V_phase2", Provenance.CALIBRATION_PARAMETER),
         ("λ_2V_phase3", "lambda_2V_phase3", Provenance.CALIBRATION_PARAMETER),
@@ -757,7 +763,18 @@ def _render_researcher(figures: Dict[str, Any], foreground: str,
         v = figures.get(key)
         if v is None:
             continue
-        parts.append(f"| {label} | {v:.3f} | {p_default.value} |")
+        ledger_rows.append(
+            f"| {label} | {v:.3f} | {provenance_label[p_default]} |"
+        )
+    if ledger_rows:
+        parts.append("| Parameter | Value | Provenance |\n|---|---:|---|")
+        parts.extend(ledger_rows)
+    else:
+        parts.append(
+            "_No calibration values supplied for this run — the panel calling "
+            "the report can pass K₇, AI substitution potential, λ_2V, and "
+            "α_4_sys to populate this ledger._"
+        )
     parts.append("")
 
     parts.append("## Honest limits")
@@ -767,11 +784,10 @@ def _render_researcher(figures: Dict[str, Any], foreground: str,
         "the paper.\n"
         "* The per-layer risk coefficients are illustrative; firm-level "
         "estimation is reserved for future work (paper Appendix A.5).\n"
-        "* The unified-lambda correction (Sprint 4) replaces the "
-        "δ_2V-on-TV mechanism with λ_2V_phase3 — see "
-        "docs/dual_channel_correction.md for the proposed manuscript edits.\n"
-        "* Monte Carlo bands rest on the distribution choices documented "
-        "under `dual_channel.monte_carlo` in config/parameters.yaml.\n"
+        "* The unified-lambda correction replaces the δ_2V-on-terminal-"
+        "value mechanism with λ_2V_phase3 (paper Appendix B.2.6).\n"
+        "* Monte Carlo bands rest on the documented dual-channel "
+        "sampling distributions (paper Appendix B.2.6).\n"
         "* K7 is a tentative seventh-layer hypothesis (paper Section 4.1) "
         "whose empirical foundation is weaker than the first six layers."
     )
