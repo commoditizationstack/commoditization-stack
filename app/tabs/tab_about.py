@@ -32,7 +32,7 @@ def render():
 
         ### Open-source repository
 
-        - GitHub: [commoditization-stack-simulation](https://github.com/ademiran/commoditization-stack-simulation)
+        - GitHub: [commoditization-stack-simulation](https://github.com/commoditizationstack/commoditization-stack-simulation)
         - Author: Arthur de Miranda Neto · [LinkedIn](https://www.linkedin.com/in/arthur-mneto/)
         - License: MIT
         - Documentation: see the project README in the repository.

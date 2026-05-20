@@ -151,7 +151,7 @@ def _render_b26_section() -> None:
         channel**: free cash flow is multiplied by a phase-conditional
         ``λ_2V`` factor (Eq B.14). The unified construction also extends
         λ to Phase 3 (permanent margin reduction; see
-        [`docs/dual_channel_correction.md`](https://github.com/ademiran/commoditization-stack-simulation/blob/main/docs/dual_channel_correction.md))
+        [`docs/dual_channel_correction.md`](https://github.com/commoditizationstack/commoditization-stack-simulation/blob/main/docs/dual_channel_correction.md))
         and retires the separate ``δ_2V`` drag (its information is
         absorbed into ``λ_phase3``).
         """

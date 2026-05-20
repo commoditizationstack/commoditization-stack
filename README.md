@@ -36,7 +36,7 @@ The repository materializes the full framework of the paper across body sections
 ## Quick start
 
 ```bash
-git clone git@github.com:ademiran/commoditization-stack-simulation.git
+git clone git@github.com:commoditizationstack/commoditization-stack-simulation.git
 cd commoditization-stack-simulation
 python -m venv .venv && source .venv/bin/activate   # Windows PowerShell: .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
