@@ -11,7 +11,7 @@ Generates Figure D.8 of the paper.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 
 from . import config
 
@@ -27,9 +27,52 @@ class FiscalBlocResult:
     cumulative_by_year: List[float]               # year-by-year cumulative (year 1-5)
 
 
-def project_bloc(jurisdiction: str) -> FiscalBlocResult:
-    """Project the 5-year fiscal impact for one bloc using YAML calibration."""
-    fb = config.load_parameters()["fiscal_blocs"]
+def _merged_config(overrides: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Deep-merge an `overrides` dict onto the YAML fiscal_blocs config.
+
+    Override shape mirrors the YAML — partial fields are honoured, missing
+    fields fall back to the canonical value. Used by callers (the API
+    layer, scenario runners) to probe sensitivities without editing the
+    YAML on disk.
+    """
+    base = dict(config.load_parameters()["fiscal_blocs"])
+    if not overrides:
+        return base
+    # Deep merge one level for sub-dicts (corporate_tax_rate, employer_charges_*,
+    # decomposition_5y_usd_millions, cumulative_5y_impact_usd_millions).
+    for key, value in overrides.items():
+        if value is None:
+            continue
+        if isinstance(value, dict) and isinstance(base.get(key), dict):
+            merged = dict(base[key])
+            for sub_key, sub_val in value.items():
+                if sub_val is None:
+                    continue
+                if isinstance(sub_val, dict) and isinstance(merged.get(sub_key), dict):
+                    inner = dict(merged[sub_key])
+                    for k2, v2 in sub_val.items():
+                        if v2 is not None:
+                            inner[k2] = v2
+                    merged[sub_key] = inner
+                else:
+                    merged[sub_key] = sub_val
+            base[key] = merged
+        else:
+            base[key] = value
+    return base
+
+
+def project_bloc(
+    jurisdiction: str,
+    overrides: Optional[Dict[str, Any]] = None,
+) -> FiscalBlocResult:
+    """Project the 5-year fiscal impact for one bloc using YAML calibration.
+
+    When `overrides` is supplied, the values are deep-merged onto the
+    canonical YAML config before reading any field. Useful for
+    parameter sweeps and for the web app's Advanced parameters lab.
+    """
+    fb = _merged_config(overrides)
     decomp = fb["decomposition_5y_usd_millions"]
 
     lost = float(decomp["lost_social_charges"][jurisdiction])
@@ -51,10 +94,12 @@ def project_bloc(jurisdiction: str) -> FiscalBlocResult:
     )
 
 
-def project_all_blocs() -> Dict[str, FiscalBlocResult]:
-    """Project all three reference jurisdictions."""
+def project_all_blocs(
+    overrides: Optional[Dict[str, Any]] = None,
+) -> Dict[str, FiscalBlocResult]:
+    """Project all three reference jurisdictions, with optional overrides."""
     return {
-        j: project_bloc(j)
+        j: project_bloc(j, overrides=overrides)
         for j in ["brazil", "france", "united_states"]
     }
 
