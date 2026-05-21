@@ -128,6 +128,7 @@ def layer_decomposed_risk_premium(
     exposure: LayerExposure,
     K7: float = 1.0,
     layer4_substitution_potential: float = 0.55,
+    alpha_overrides: Optional[Dict[str, float]] = None,
 ) -> Tuple[float, Dict[str, float]]:
     """Compute the firm-specific risk premium as a sum of per-layer
     contributions, returning both the total and the breakdown.
@@ -138,26 +139,48 @@ def layer_decomposed_risk_premium(
     cross-border knowledge regime) creates a small positive premium
     representing the marginal vendor-concentration risk that the
     paper's section 8.4 introduces.
+
+    ``alpha_overrides`` lets a caller substitute the paper-canonical
+    α coefficients (Appendix A.2) with their own values for sensitivity
+    analysis. Keys must match the YAML schema
+    (``layer_1_infra``, ``layer_2_foundation``, …, ``layer_7_crossborder``);
+    any subset is accepted, with missing keys falling back to the
+    YAML default. The website's Advanced parameters lab uses this.
     """
     vl = config.load_parameters()["valuation_layered"]
     amp_base = float(vl["layer4_substitution_amplifier_base"])
     k7_premium_per_unit = float(vl["layer7_k_premium_per_unit"])
 
+    def alpha(key: str) -> float:
+        if alpha_overrides is not None and key in alpha_overrides:
+            override = alpha_overrides[key]
+            if override is not None:
+                return float(override)
+        return float(LAYER_RISK_COEFFICIENTS[key])
+
     breakdown: Dict[str, float] = {}
-    breakdown["layer_1_infra"] = LAYER_RISK_COEFFICIENTS["layer_1_infra"] * exposure.layer_1_infra
-    breakdown["layer_2_foundation"] = LAYER_RISK_COEFFICIENTS["layer_2_foundation"] * exposure.layer_2_foundation
-    breakdown["layer_3_capability"] = LAYER_RISK_COEFFICIENTS["layer_3_capability"] * exposure.layer_3_capability
+    breakdown["layer_1_infra"] = alpha("layer_1_infra") * exposure.layer_1_infra
+    breakdown["layer_2_foundation"] = alpha("layer_2_foundation") * exposure.layer_2_foundation
+    breakdown["layer_3_capability"] = alpha("layer_3_capability") * exposure.layer_3_capability
     # Layer 4: amplified by AI substitution potential
     breakdown["layer_4_codified"] = (
-        LAYER_RISK_COEFFICIENTS["layer_4_codified"]
+        alpha("layer_4_codified")
         * exposure.layer_4_codified
         * (amp_base + layer4_substitution_potential)
     )
-    breakdown["layer_5_judgment"] = LAYER_RISK_COEFFICIENTS["layer_5_judgment"] * exposure.layer_5_judgment
-    breakdown["layer_6_institutional"] = LAYER_RISK_COEFFICIENTS["layer_6_institutional"] * exposure.layer_6_institutional
-    # Layer 7: K7-modulated
-    layer7_k_premium = (1.0 - K7) * k7_premium_per_unit
-    breakdown["layer_7_crossborder"] = layer7_k_premium * exposure.layer_7_crossborder
+    breakdown["layer_5_judgment"] = alpha("layer_5_judgment") * exposure.layer_5_judgment
+    breakdown["layer_6_institutional"] = alpha("layer_6_institutional") * exposure.layer_6_institutional
+    # Layer 7: K7-modulated. The override here REPLACES the K7 modulation
+    # (advanced users who want to disable the K7 channel can set
+    # `layer_7_crossborder` directly). When no override, the canonical
+    # K7-modulated premium per unit applies.
+    if alpha_overrides is not None and alpha_overrides.get("layer_7_crossborder") is not None:
+        breakdown["layer_7_crossborder"] = (
+            float(alpha_overrides["layer_7_crossborder"]) * exposure.layer_7_crossborder
+        )
+    else:
+        layer7_k_premium = (1.0 - K7) * k7_premium_per_unit
+        breakdown["layer_7_crossborder"] = layer7_k_premium * exposure.layer_7_crossborder
     total = sum(breakdown.values())
     return total, breakdown
 
@@ -179,6 +202,10 @@ class LayeredDiscountRateInputs:
     K7: float = 1.0                         # cross-border knowledge regime
     layer4_substitution_potential: float = 0.55
     sector_label: str = "unspecified"
+    # Optional override of the signed per-layer α coefficients
+    # (Appendix A.2 of the paper). Keys must match the YAML schema.
+    # See ``layer_decomposed_risk_premium`` for behaviour.
+    alpha_overrides: Optional[Dict[str, float]] = None
 
 
 @dataclass
@@ -218,6 +245,7 @@ def compute_layered_discount_rate(inputs: LayeredDiscountRateInputs) -> LayeredD
         inputs.layer_exposure,
         K7=inputs.K7,
         layer4_substitution_potential=inputs.layer4_substitution_potential,
+        alpha_overrides=inputs.alpha_overrides,
     )
     total = base_capm + trl_pp + layer_total_pp
     classical = base_capm  # the textbook stops here
@@ -339,6 +367,7 @@ def layered_dcf(
             K7=inputs.K7,
             layer4_substitution_potential=inputs.layer4_substitution_potential,
             sector_label=inputs.sector_label,
+            alpha_overrides=inputs.alpha_overrides,
         )
         rate_result = compute_layered_discount_rate(year_inputs)
         rate_t = rate_result.total_discount_rate
@@ -362,6 +391,7 @@ def layered_dcf(
         K7=inputs.K7,
         layer4_substitution_potential=inputs.layer4_substitution_potential,
         sector_label=inputs.sector_label,
+        alpha_overrides=inputs.alpha_overrides,
     )
     terminal_rate = compute_layered_discount_rate(final_inputs).total_discount_rate
     last_fcf = cf.fcf_usd[-1]

@@ -153,6 +153,39 @@ class TestPhase1NewModules(unittest.TestCase):
         ))
         self.assertGreaterEqual(r.n_orchestrators, 1)
 
+    def test_layer_risk_alpha_overrides_take_precedence(self):
+        """The optional alpha_overrides on LayeredDiscountRateInputs must
+        replace the YAML-canonical Appendix-A.2 coefficients per key,
+        falling back when a key is absent."""
+        from src.valuation_layered import (
+            LayerExposure,
+            layer_decomposed_risk_premium,
+            LAYER_RISK_COEFFICIENTS,
+        )
+        exposure = LayerExposure(
+            layer_1_infra=0.10, layer_2_foundation=0.10, layer_3_capability=0.10,
+            layer_4_codified=0.30, layer_5_judgment=0.20,
+            layer_6_institutional=0.15, layer_7_crossborder=0.05,
+        )
+        base_total, _ = layer_decomposed_risk_premium(exposure)
+        # Boost α_6 institutional (which is normally protective ≈ -0.06)
+        # to a strongly protective -0.20 — total premium must drop.
+        boosted_protective, _ = layer_decomposed_risk_premium(
+            exposure, alpha_overrides={"layer_6_institutional": -0.20},
+        )
+        self.assertLess(boosted_protective, base_total)
+        # Per-key fallback: an override for only one layer must leave the
+        # others on their YAML default.
+        partial, partial_breakdown = layer_decomposed_risk_premium(
+            exposure, alpha_overrides={"layer_1_infra": 0.0},
+        )
+        self.assertEqual(partial_breakdown["layer_1_infra"], 0.0)
+        # layer_3 untouched → uses paper default
+        self.assertAlmostEqual(
+            partial_breakdown["layer_3_capability"],
+            LAYER_RISK_COEFFICIENTS["layer_3_capability"] * 0.10,
+        )
+
     def test_migration_global_overrides_take_precedence(self):
         """The Optional override fields on MigrationParameters must take
         precedence over the YAML defaults — this is the contract the
