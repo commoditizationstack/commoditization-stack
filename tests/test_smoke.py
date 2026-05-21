@@ -153,6 +153,34 @@ class TestPhase1NewModules(unittest.TestCase):
         ))
         self.assertGreaterEqual(r.n_orchestrators, 1)
 
+    def test_fragility_overrides_take_precedence(self):
+        """Fragility's three calibration knobs (l6_coefficient + the two
+        zone thresholds) must accept per-call overrides for the website's
+        Advanced parameters lab. A larger l6_coefficient pulls more firms
+        into the protective (negative) regime."""
+        from src.fragility import compute_fragility, case_studies_fragility
+        # Base case for a firm at L4=0.55, L6=0.10 (fragile profile).
+        base = compute_fragility(0.55, 0.10)
+        self.assertEqual(base.zone, "fragile")
+        # With a much stronger L6 multiplier, the same firm becomes
+        # resilient (0.55 − 6.0 × 0.10 = −0.05, which is between the
+        # default thresholds → borderline).
+        relaxed = compute_fragility(0.55, 0.10, l6_coefficient=6.0)
+        self.assertLess(relaxed.fragility_index, base.fragility_index)
+        # And widening the borderline zone via thresholds pulls the same
+        # value into the relaxed band.
+        widened = compute_fragility(
+            0.55, 0.10, l6_coefficient=6.0,
+            resilient_threshold=-0.30, fragile_threshold=0.30,
+        )
+        self.assertEqual(widened.zone, "borderline")
+        # case_studies_fragility plumbs the overrides through.
+        cs = case_studies_fragility(l6_coefficient=2.5)
+        self.assertLess(
+            cs["dataflow_pro"].fragility_index,
+            case_studies_fragility()["dataflow_pro"].fragility_index,
+        )
+
     def test_layer_risk_alpha_overrides_take_precedence(self):
         """The optional alpha_overrides on LayeredDiscountRateInputs must
         replace the YAML-canonical Appendix-A.2 coefficients per key,
