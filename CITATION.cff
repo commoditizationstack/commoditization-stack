@@ -1,11 +1,12 @@
 cff-version: 1.2.0
-title: commoditization-stack-simulation
+title: commoditization-stack
 message: "If you use this software, please cite it using the metadata below."
 type: software
 authors:
   - given-names: Arthur
     family-names: de Miranda Neto
-repository-code: "[GitHub TBD]"
+repository-code: "https://github.com/commoditizationstack/commoditization-stack"
+url: "https://commoditizationstack.org"
 abstract: >
   Computational appendix to the working paper "The Cost Gradient of the Build —
   How Differential Commoditization Reshapes Entrepreneurship and Valuation: A
@@ -57,5 +58,5 @@ keywords:
   - upstream AI value chain
   - simulation
 license: MIT
-version: "0.11"
-date-released: "2026-05-20"
+version: "1.0.0"
+date-released: "2026-05-21"

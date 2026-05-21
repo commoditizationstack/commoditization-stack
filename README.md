@@ -1,4 +1,4 @@
-# commoditization-stack-simulation
+# commoditization-stack
 
 **Computational appendix to:** *The Cost Gradient of the Build — How Differential Commoditization Reshapes Entrepreneurship and Valuation: A Layer-Decomposed Risk Premium for the Post-AI Firm* (de Miranda Neto, 2026, working paper).
 
@@ -36,10 +36,10 @@ The repository materializes the full framework of the paper across body sections
 ## Quick start
 
 ```bash
-git clone git@github.com:commoditizationstack/commoditization-stack-simulation.git
-cd commoditization-stack-simulation
+git clone https://github.com/commoditizationstack/commoditization-stack.git
+cd commoditization-stack
 python -m venv .venv && source .venv/bin/activate   # Windows PowerShell: .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -e ".[all]"   # editable install + Streamlit UI + notebooks + tests
 
 # Body figures (Sections 4–8)
 python scripts/run_deterministic.py            # Figures 1, 2, 5, 6, 7
@@ -147,7 +147,7 @@ A "labor preservation scenario" example is provided in `config/scenarios/labor_p
 > de Miranda Neto, A. (2026). *The Cost Gradient of the Build — How Differential Commoditization Reshapes Entrepreneurship and Valuation: A Layer-Decomposed Risk Premium for the Post-AI Firm*. Working paper.
 
 **Repository:**
-> de Miranda Neto, A. (2026). *commoditization-stack-simulation* (v0.5) [Computer software]. GitHub.
+> de Miranda Neto, A. (2026). *commoditization-stack* (v1.0) [Computer software]. GitHub. https://github.com/commoditizationstack/commoditization-stack
 
 A `CITATION.cff` file is provided so that GitHub's "Cite this repository" button produces a properly formatted citation automatically.
 
