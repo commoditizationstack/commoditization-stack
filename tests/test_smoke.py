@@ -153,6 +153,38 @@ class TestPhase1NewModules(unittest.TestCase):
         ))
         self.assertGreaterEqual(r.n_orchestrators, 1)
 
+    def test_migration_global_overrides_take_precedence(self):
+        """The Optional override fields on MigrationParameters must take
+        precedence over the YAML defaults — this is the contract the
+        website's Advanced parameters lab depends on."""
+        from src.migration_dynamics import compute_migration, MigrationParameters
+        base = compute_migration(MigrationParameters(
+            n_total_engineers=50, substitution_fraction=0.60,
+            jurisdiction="united_states",
+        ))
+        # Override the orchestrator ratio to 1:20 (instead of YAML 1:10) —
+        # halves the orchestrator headcount, so orchestrator annual cost drops.
+        overridden = compute_migration(MigrationParameters(
+            n_total_engineers=50, substitution_fraction=0.60,
+            jurisdiction="united_states",
+            orchestrator_ratio=20.0,
+        ))
+        self.assertLess(overridden.n_orchestrators, base.n_orchestrators)
+        self.assertLess(
+            overridden.annual_orchestrator_cost_usd,
+            base.annual_orchestrator_cost_usd,
+        )
+        # Override AI tooling cost to zero — net annual saving rises.
+        no_tooling = compute_migration(MigrationParameters(
+            n_total_engineers=50, substitution_fraction=0.60,
+            jurisdiction="united_states",
+            ai_tooling_cost_per_dev_usd_year=0.0,
+        ))
+        self.assertGreater(
+            no_tooling.annual_net_saving_usd,
+            base.annual_net_saving_usd,
+        )
+
     def test_streaming_case_decomposition(self):
         from src.streaming_case import (
             incumbent_price_decomposition, run_three_scenarios)

@@ -23,15 +23,31 @@ from . import config
 
 @dataclass
 class MigrationParameters:
-    """Inputs for a migration cash-flow simulation."""
+    """Inputs for a migration cash-flow simulation.
+
+    Each of the per-jurisdiction and global override fields below is
+    optional. When set, it takes precedence over the corresponding
+    ``config/parameters.yaml`` value; when ``None``, the YAML default
+    applies. This is how the website's Advanced parameters lab lets
+    a user probe sensitivity without touching the YAML.
+    """
     n_total_engineers: int
     substitution_fraction: float
     jurisdiction: str                    # "brazil", "france", or "united_states"
+    # Per-jurisdiction overrides (paper §7.5)
     loaded_swe_cost_usd_year: Optional[float] = None    # per senior engineer
     loaded_mid_cost_usd_year: Optional[float] = None    # per substitutable engineer
     termination_cost_fraction: Optional[float] = None
     orchestrator_floor: int = 1
     horizon_quarters: int = 23           # T-3 to T20 inclusive
+    # Global migration-dynamics overrides (paper §7.5 — AI-orchestrator
+    # function, transition overhead, retention bonus).
+    orchestrator_ratio: Optional[float] = None
+    orchestrator_premium_pct: Optional[float] = None
+    ai_tooling_cost_per_dev_usd_year: Optional[float] = None
+    dual_operation_overhead_quarters: Optional[int] = None
+    retention_bonus_quarters: Optional[int] = None
+    retention_bonus_fraction: Optional[float] = None
 
 
 @dataclass
@@ -76,20 +92,38 @@ def compute_migration(params: MigrationParameters) -> MigrationResult:
         params.termination_cost_fraction = float(
             config.jurisdiction_defaults()[j]["termination_cost_fraction"])
 
+    # Resolve global migration-dynamics knobs: prefer caller override,
+    # fall back to YAML.
+    orchestrator_ratio = (
+        params.orchestrator_ratio
+        if params.orchestrator_ratio is not None
+        else float(md["orchestrator_ratio"])
+    )
+    orchestrator_premium_pct = (
+        params.orchestrator_premium_pct
+        if params.orchestrator_premium_pct is not None
+        else float(md["orchestrator_premium_pct"])
+    )
+    ai_tooling_cost_per_dev = (
+        params.ai_tooling_cost_per_dev_usd_year
+        if params.ai_tooling_cost_per_dev_usd_year is not None
+        else float(md["ai_tooling_cost_per_dev_usd_year"])
+    )
+
     n_sub = int(round(params.n_total_engineers * params.substitution_fraction))
     n_retained = params.n_total_engineers - n_sub
     n_orchestrators = max(
         params.orchestrator_floor,
-        int(round(n_retained / float(md["orchestrator_ratio"]))) if n_sub > 0 else 0,
+        int(round(n_retained / orchestrator_ratio)) if n_sub > 0 else 0,
     ) if n_sub > 0 else 0
 
     # Annual flows
     annual_gross_saving = n_sub * params.loaded_mid_cost_usd_year
     annual_ai_tooling_cost = (
         n_retained + n_sub  # AI tooling helps retained team too
-    ) * float(md["ai_tooling_cost_per_dev_usd_year"])
+    ) * ai_tooling_cost_per_dev
     orchestrator_annual = n_orchestrators * (
-        params.loaded_swe_cost_usd_year * (1.0 + float(md["orchestrator_premium_pct"]))
+        params.loaded_swe_cost_usd_year * (1.0 + orchestrator_premium_pct)
     )
     annual_net = annual_gross_saving - orchestrator_annual - annual_ai_tooling_cost
 
@@ -101,9 +135,21 @@ def compute_migration(params: MigrationParameters) -> MigrationResult:
     cumulative = [0.0]
 
     learning_curve = md["learning_curve"]
-    dual_op_overhead_q = int(md["dual_operation_overhead_quarters"])
-    retention_bonus_q = int(md["retention_bonus_quarters"])
-    retention_bonus_frac = float(md["retention_bonus_fraction"])
+    dual_op_overhead_q = (
+        params.dual_operation_overhead_quarters
+        if params.dual_operation_overhead_quarters is not None
+        else int(md["dual_operation_overhead_quarters"])
+    )
+    retention_bonus_q = (
+        params.retention_bonus_quarters
+        if params.retention_bonus_quarters is not None
+        else int(md["retention_bonus_quarters"])
+    )
+    retention_bonus_frac = (
+        params.retention_bonus_fraction
+        if params.retention_bonus_fraction is not None
+        else float(md["retention_bonus_fraction"])
+    )
 
     for q in quarters[1:]:  # skip T-3 since cumulative starts at 0
         cash_q = 0.0
